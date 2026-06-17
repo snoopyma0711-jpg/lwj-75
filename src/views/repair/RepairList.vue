@@ -152,7 +152,7 @@
                 <span class="badge bg-gray-100 text-gray-700">{{ getCategoryLabel(order.category) }}</span>
               </td>
               <td>
-                <span class="badge" :class="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
+                <span class="badge" :class="getStatusClass(getDisplayStatus(order))">{{ getStatusLabel(getDisplayStatus(order)) }}</span>
               </td>
               <td>
                 <span v-if="order.visitStatus" class="badge" :class="getVisitStatusClass(order.visitStatus)">
@@ -309,6 +309,7 @@ const getStatusClass = (status) => {
     case 'processing': return 'bg-yellow-100 text-yellow-600'
     case 'completed': return 'bg-green-100 text-green-600'
     case 'cancelled': return 'bg-gray-100 text-gray-500'
+    case 'followup': return 'bg-red-100 text-red-600'
     default: return 'bg-gray-100 text-gray-600'
   }
 }
@@ -320,8 +321,14 @@ const getStatusLabel = (status) => {
     case 'processing': return '处理中'
     case 'completed': return '已完成'
     case 'cancelled': return '已取消'
+    case 'followup': return '待跟进'
     default: return status
   }
+}
+
+const getDisplayStatus = (order) => {
+  if (order.visitStatus === 'followup') return 'followup'
+  return order.status
 }
 
 const getEngineerName = (id) => {

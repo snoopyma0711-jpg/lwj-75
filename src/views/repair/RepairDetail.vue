@@ -52,7 +52,7 @@
         <div class="card p-5">
           <div class="flex items-start justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900">报修信息</h2>
-            <span class="badge" :class="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
+            <span class="badge" :class="getStatusClass(getDisplayStatus(order))">{{ getStatusLabel(getDisplayStatus(order)) }}</span>
           </div>
           
           <div class="grid grid-cols-2 gap-4 text-sm">
@@ -437,7 +437,7 @@
                   v-for="level in satisfactionLevels"
                   :key="level.value"
                   type="button"
-                  @click="visitForm.satisfaction = level.value"
+                  @click="visitForm.satisfaction = level.value; visitErrors.satisfaction = ''"
                   class="flex-1 py-2 px-1 rounded-lg border-2 transition-all text-center"
                   :class="visitForm.satisfaction === level.value 
                     ? 'border-primary-500 bg-primary-50 text-primary-700' 
@@ -621,6 +621,7 @@ const getStatusClass = (status) => {
     case 'processing': return 'bg-yellow-100 text-yellow-600'
     case 'completed': return 'bg-green-100 text-green-600'
     case 'cancelled': return 'bg-gray-100 text-gray-500'
+    case 'followup': return 'bg-red-100 text-red-600'
     default: return 'bg-gray-100 text-gray-600'
   }
 }
@@ -632,8 +633,14 @@ const getStatusLabel = (status) => {
     case 'processing': return '处理中'
     case 'completed': return '已完成'
     case 'cancelled': return '已取消'
+    case 'followup': return '待跟进'
     default: return status
   }
+}
+
+const getDisplayStatus = (order) => {
+  if (order.visitStatus === 'followup') return 'followup'
+  return order.status
 }
 
 const getSourceLabel = (source) => {
