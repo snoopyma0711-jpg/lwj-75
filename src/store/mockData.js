@@ -49,6 +49,28 @@ const engineers = [
   { id: 'ENG004', name: '刘师傅', phone: '137****3456', specialty: '综合' }
 ]
 
+const serviceStaff = [
+  { id: 'SRV001', name: '张客服' },
+  { id: 'SRV002', name: '李客服' },
+  { id: 'SRV003', name: '王客服' }
+]
+
+const satisfactionLevels = [
+  { value: 5, label: '非常满意', emoji: '😄' },
+  { value: 4, label: '满意', emoji: '🙂' },
+  { value: 3, label: '一般', emoji: '😐' },
+  { value: 2, label: '不满意', emoji: '😟' },
+  { value: 1, label: '非常不满意', emoji: '😠' }
+]
+
+const visitStatusMap = {
+  pending: '待回访',
+  visiting: '回访中',
+  completed: '已回访',
+  followup: '待跟进',
+  closed: '已关闭'
+}
+
 const today = dayjs('2026-06-17')
 
 const generateRepairOrders = () => {
@@ -204,7 +226,9 @@ const generateRepairOrders = () => {
     returnReason: null,
     remarks: '客户对处理速度很满意',
     isTimeout: false,
-    source: 'phone'
+    source: 'phone',
+    visitStatus: 'pending',
+    visitRecords: []
   })
   
   orders.push({
@@ -230,14 +254,27 @@ const generateRepairOrders = () => {
       { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:15:00', operator: '张工', action: '接单', content: '已接单' },
       { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '张工', action: '到达现场', content: '已到达现场查看' },
       { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 15:00:00', operator: '张工', action: '处理中', content: '已联系楼上业主，约定明天下午做闭水试验' },
-      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:30:00', operator: '张工', action: '完成', content: '经闭水试验确认是楼上防水问题，已协助联系楼上业主安排维修' }
+      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:30:00', operator: '张工', action: '完成', content: '经闭水试验确认是楼上防水问题，已协助联系楼上业主安排维修' },
+      { time: today.format('YYYY-MM-DD') + ' 09:15:00', operator: '张客服', action: '回访转跟进', content: '住户反映渗水问题仍然存在，转为待跟进状态，需要再次上门处理' }
     ],
     processResult: '已确认渗水原因是楼上阳台防水层破损，已协调楼上业主安排维修。本次已做临时防水处理。',
     needReturn: true,
     returnReason: '需要跟进楼上维修进度，确认渗水问题彻底解决',
     remarks: '已建立跟进计划',
     isTimeout: false,
-    source: 'resident'
+    source: 'resident',
+    visitStatus: 'followup',
+    visitRecords: [
+      {
+        id: 'VR001',
+        visitTime: today.format('YYYY-MM-DD') + ' 09:00:00',
+        visitor: '张客服',
+        satisfaction: 2,
+        problemResolved: false,
+        remark: '住户反映阳台天花板仍然有渗水痕迹，问题没有彻底解决，需要再次安排工程人员上门检查。楼上业主说还没来得及安排维修。',
+        unresolvedReason: '楼上防水层未修复，渗水问题持续，需要再次协调并跟进处理'
+      }
+    ]
   })
   
   orders.push({
@@ -262,14 +299,27 @@ const generateRepairOrders = () => {
       { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '张客服', action: '派单', content: '派单给刘师傅' },
       { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 09:35:00', operator: '刘师傅', action: '接单', content: '已接单' },
       { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 10:10:00', operator: '刘师傅', action: '到达现场', content: '已到达' },
-      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 10:25:00', operator: '刘师傅', action: '完成', content: '已对门锁进行清洁和润滑，开关顺畅' }
+      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 10:25:00', operator: '刘师傅', action: '完成', content: '已对门锁进行清洁和润滑，开关顺畅' },
+      { time: today.format('YYYY-MM-DD') + ' 10:30:00', operator: '张客服', action: '回访完成', content: '住户满意，问题已彻底解决，回访完成' }
     ],
     processResult: '门锁锁芯和机械结构进行了清洁和润滑油处理，现在开关顺畅。',
     needReturn: false,
     returnReason: null,
     remarks: '',
     isTimeout: false,
-    source: 'resident'
+    source: 'resident',
+    visitStatus: 'completed',
+    visitRecords: [
+      {
+        id: 'VR002',
+        visitTime: today.format('YYYY-MM-DD') + ' 10:15:00',
+        visitor: '张客服',
+        satisfaction: 5,
+        problemResolved: true,
+        remark: '住户表示门锁现在开关非常顺畅，对刘师傅的服务态度和处理速度都非常满意，没有其他问题。',
+        unresolvedReason: null
+      }
+    ]
   })
   
   orders.push({
@@ -294,14 +344,27 @@ const generateRepairOrders = () => {
       { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 11:15:00', operator: '张客服', action: '派单', content: '派单给李工程师' },
       { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 11:20:00', operator: '李工程师', action: '接单', content: '已接单' },
       { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 14:30:00', operator: '李工程师', action: '到达现场', content: '已到达' },
-      { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 15:00:00', operator: '李工程师', action: '完成', content: '线路接头松动，重新接线后恢复正常' }
+      { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 15:00:00', operator: '李工程师', action: '完成', content: '线路接头松动，重新接线后恢复正常' },
+      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '李客服', action: '回访完成', content: '住户满意，问题已解决，回访完成' }
     ],
     processResult: '检查发现可视对讲室内机线路接头氧化松动，重新处理接头并做防锈处理，设备恢复正常。',
     needReturn: false,
     returnReason: null,
     remarks: '',
     isTimeout: false,
-    source: 'phone'
+    source: 'phone',
+    visitStatus: 'completed',
+    visitRecords: [
+      {
+        id: 'VR003',
+        visitTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 09:30:00',
+        visitor: '李客服',
+        satisfaction: 4,
+        problemResolved: true,
+        remark: '住户反映可视对讲使用正常，对处理结果满意，就是上门时间稍微晚了一点。',
+        unresolvedReason: null
+      }
+    ]
   })
   
   orders.push({
@@ -355,14 +418,27 @@ const generateRepairOrders = () => {
       { time: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 22:20:00', operator: '张客服', action: '派单', content: '夜间报修，安排明早处理，先放置临时照明' },
       { time: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 22:25:00', operator: '李工程师', action: '接单', content: '已接单，明早第一时间处理' },
       { time: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 22:45:00', operator: '保安', action: '临时处理', content: '已在B区放置3个移动照明灯' },
-      { time: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '李工程师', action: '完成', content: '更换5盏LED灯管，照明恢复正常' }
+      { time: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '李工程师', action: '完成', content: '更换5盏LED灯管，照明恢复正常' },
+      { time: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '王客服', action: '回访完成', content: '回访确认照明已恢复，无其他问题' }
     ],
     processResult: '地下车库B区共更换5盏18W LED灯管，检查线路正常，照明全部恢复。',
     needReturn: false,
     returnReason: null,
     remarks: '',
     isTimeout: false,
-    source: 'patrol'
+    source: 'patrol',
+    visitStatus: 'completed',
+    visitRecords: [
+      {
+        id: 'VR004',
+        visitTime: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        visitor: '王客服',
+        satisfaction: 4,
+        problemResolved: true,
+        remark: '保安确认地下车库B区照明已全部恢复正常，夜间临时照明的应急处理也很及时，整体满意。',
+        unresolvedReason: null
+      }
+    ]
   })
   
   for (let i = 1; i <= 15; i++) {
@@ -370,6 +446,20 @@ const generateRepairOrders = () => {
     const buildingIndex = Math.floor(Math.random() * 6)
     const categoryIndex = Math.floor(Math.random() * repairCategories.length)
     const urgencyIndex = Math.floor(Math.random() * 3)
+    const needVisit = randomDay <= 3
+    const visited = needVisit && Math.random() > 0.3
+    const satisfactionVal = needVisit ? (visited ? [3, 4, 5][Math.floor(Math.random() * 3)] : null) : null
+    const randomStaff = serviceStaff[Math.floor(Math.random() * serviceStaff.length)]
+    
+    const visitRecord = visited ? [{
+      id: `VR${String(100 + i).padStart(3, '0')}`,
+      visitTime: today.subtract(Math.max(0, randomDay - 1), 'day').format('YYYY-MM-DD') + ` ${String(Math.floor(Math.random() * 6) + 10).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`,
+      visitor: randomStaff.name,
+      satisfaction: satisfactionVal,
+      problemResolved: satisfactionVal >= 3,
+      remark: satisfactionVal >= 4 ? '住户表示满意，问题已解决。' : satisfactionVal === 3 ? '住户反馈一般，问题基本解决。' : '住户有轻微不满，已记录。',
+      unresolvedReason: satisfactionVal < 3 ? '需要进一步跟进' : null
+    }] : []
     
     orders.push({
       id: `WX202606${String(today.subtract(randomDay, 'day').date()).padStart(2, '0')}${String(100 + i).padStart(4, '0')}`,
@@ -399,7 +489,9 @@ const generateRepairOrders = () => {
       returnReason: null,
       remarks: '',
       isTimeout: false,
-      source: ['resident', 'phone'][Math.floor(Math.random() * 2)]
+      source: ['resident', 'phone'][Math.floor(Math.random() * 2)],
+      visitStatus: !needVisit ? null : (visited ? 'completed' : 'pending'),
+      visitRecords: visitRecord
     })
   }
   
@@ -560,4 +652,4 @@ const generateInspectionTasks = () => {
 
 export const inspectionRecords = generateInspectionTasks()
 
-export { repairCategories, urgentLevels, engineers, generateRepairOrders }
+export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, generateRepairOrders }

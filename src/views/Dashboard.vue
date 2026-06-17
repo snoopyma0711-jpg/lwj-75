@@ -34,13 +34,75 @@
       <div class="card p-5">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-500">处理中</p>
-            <p class="text-3xl font-bold text-orange-600 mt-1">{{ processingOrders.length }}</p>
-            <p class="text-xs text-gray-400 mt-1">进行中的工单</p>
+            <p class="text-sm font-medium text-gray-500">今日待回访</p>
+            <p class="text-3xl font-bold text-orange-600 mt-1">{{ todayPendingVisits.length }}</p>
+            <p class="text-xs text-gray-400 mt-1">需要客服回访</p>
           </div>
           <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">今日已回访</p>
+            <p class="text-3xl font-bold text-cyan-600 mt-1">{{ todayCompletedVisits.length }}</p>
+            <p class="text-xs text-gray-400 mt-1">今日完成回访</p>
+          </div>
+          <div class="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">回访满意率</p>
+            <p class="text-3xl font-bold text-green-600 mt-1">{{ visitSatisfactionRate }}%</p>
+            <p class="text-xs text-gray-400 mt-1">综合满意度</p>
+          </div>
+          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">处理中</p>
+            <p class="text-3xl font-bold text-yellow-600 mt-1">{{ processingOrders.length }}</p>
+            <p class="text-xs text-gray-400 mt-1">进行中的工单</p>
+          </div>
+          <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">待跟进工单</p>
+            <p class="text-3xl font-bold text-red-600 mt-1">{{ followupOrders.length }}</p>
+            <p class="text-xs text-red-500 mt-1">回访不满意需跟进</p>
+          </div>
+          <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </div>
         </div>
@@ -53,7 +115,7 @@
             <p class="text-3xl font-bold text-red-600 mt-1">{{ timeoutOrders.length }}</p>
             <p class="text-xs text-red-500 mt-1">需要尽快处理</p>
           </div>
-          <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -65,12 +127,12 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500">今日完成</p>
-            <p class="text-3xl font-bold text-green-600 mt-1">{{ todayCompletedOrders.length }}</p>
+            <p class="text-3xl font-bold text-emerald-600 mt-1">{{ todayCompletedOrders.length }}</p>
             <p class="text-xs text-gray-400 mt-1">今日处理完成</p>
           </div>
-          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
         </div>
@@ -90,11 +152,11 @@
 
       <div class="card p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">各楼栋问题分布</h2>
-          <router-link to="/ledger/buildings" class="text-sm text-primary-600 hover:text-primary-700">查看台账</router-link>
+          <h2 class="text-lg font-semibold text-gray-900">最近7天回访满意度趋势</h2>
+          <span class="text-sm text-gray-500">单位：%</span>
         </div>
         <div class="h-64">
-          <canvas ref="buildingChartRef"></canvas>
+          <canvas ref="satisfactionChartRef"></canvas>
         </div>
       </div>
     </div>
@@ -190,11 +252,17 @@ const {
   timeoutOrders, 
   todayCompletedOrders, 
   last7DaysOrders, 
-  buildingDistribution 
+  buildingDistribution,
+  todayPendingVisits,
+  todayCompletedVisits,
+  followupOrders,
+  visitSatisfactionRate,
+  last7DaysSatisfaction
 } = store
 
 const trendChartRef = ref(null)
 const buildingChartRef = ref(null)
+const satisfactionChartRef = ref(null)
 const currentDate = dayjs('2026-06-17').format('YYYY年MM月DD日')
 
 const pendingOrders = computed(() => {
@@ -339,6 +407,44 @@ onMounted(() => {
           y: {
             beginAtZero: true,
             ticks: { stepSize: 1 }
+          }
+        }
+      }
+    })
+  }
+
+  if (satisfactionChartRef.value) {
+    new Chart(satisfactionChartRef.value, {
+      type: 'line',
+      data: {
+        labels: last7DaysSatisfaction.value.map(d => d.date.slice(5)),
+        datasets: [{
+          label: '满意率',
+          data: last7DaysSatisfaction.value.map(d => d.rate),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              stepSize: 20,
+              callback: (value) => value + '%'
+            }
           }
         }
       }

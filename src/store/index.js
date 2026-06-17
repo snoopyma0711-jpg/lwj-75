@@ -7,7 +7,10 @@ import {
   inspectionRecords,
   repairCategories, 
   urgentLevels, 
-  engineers, 
+  engineers,
+  serviceStaff,
+  satisfactionLevels,
+  visitStatusMap,
   generateRepairOrders 
 } from './mockData'
 
@@ -22,6 +25,9 @@ const state = reactive({
   repairCategories: [...repairCategories],
   urgentLevels: [...urgentLevels],
   engineers: [...engineers],
+  serviceStaff: [...serviceStaff],
+  satisfactionLevels: [...satisfactionLevels],
+  visitStatusMap: { ...visitStatusMap },
   currentDate: today.format('YYYY-MM-DD')
 })
 
@@ -67,6 +73,63 @@ const getters = {
       ).length
       return { name: building.name, count, id: building.id }
     }).sort((a, b) => b.count - a.count)
+  }),
+
+  todayPendingVisits: computed(() => {
+    return state.repairOrders.filter(order => {
+      if (order.status !== 'completed') return false
+      if (!order.completeTime) return false
+      return order.visitStatus === 'pending' || 
+             (order.visitStatus === null && dayjs(order.completeTime).format('YYYY-MM-DD') <= state.currentDate)
+    })
+  }),
+
+  todayCompletedVisits: computed(() => {
+    return state.repairOrders.filter(order => {
+      if (!order.visitRecords || order.visitRecords.length === 0) return false
+      const lastVisit = order.visitRecords[order.visitRecords.length - 1]
+      return dayjs(lastVisit.visitTime).format('YYYY-MM-DD') === state.currentDate
+    })
+  }),
+
+  followupOrders: computed(() => {
+    return state.repairOrders.filter(order => order.visitStatus === 'followup')
+  }),
+
+  visitSatisfactionRate: computed(() => {
+    const visitedOrders = state.repairOrders.filter(order => 
+      order.visitRecords && order.visitRecords.length > 0
+    )
+    if (visitedOrders.length === 0) return 100
+    const satisfiedCount = visitedOrders.filter(order => {
+      const lastVisit = order.visitRecords[order.visitRecords.length - 1]
+      return lastVisit.satisfaction >= 4
+    }).length
+    return Math.round((satisfiedCount / visitedOrders.length) * 100)
+  }),
+
+  last7DaysSatisfaction: computed(() => {
+    const days = []
+    for (let i = 6; i >= 0; i--) {
+      const date = today.subtract(i, 'day').format('YYYY-MM-DD')
+      const dayVisits = []
+      state.repairOrders.forEach(order => {
+        if (order.visitRecords && order.visitRecords.length > 0) {
+          order.visitRecords.forEach(record => {
+            if (dayjs(record.visitTime).format('YYYY-MM-DD') === date) {
+              dayVisits.push(record)
+            }
+          })
+        }
+      })
+      let rate = 0
+      if (dayVisits.length > 0) {
+        const satisfied = dayVisits.filter(r => r.satisfaction >= 4).length
+        rate = Math.round((satisfied / dayVisits.length) * 100)
+      }
+      days.push({ date, rate, count: dayVisits.length })
+    }
+    return days
   })
 }
 
@@ -383,6 +446,82 @@ const actions = {
     if (!equipment) return false
     Object.assign(equipment, updateData)
     return true
+  },
+
+  addVisitRecord(orderId, visitor, visitData) {
+    const order = state.repairOrders.find(o => o.id === orderId)
+    if (!order) return false
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    const visitId = `VR${Date.now()}`
+
+    const newRecord = {
+      id: visitId,
+      visitTime: now,
+      visitor: visitor,
+      satisfaction: visitData.satisfaction,
+      problemResolved: visitData.problemResolved,
+      remark: visitData.remark,
+      unresolvedReason: visitData.unresolvedReason || null
+    }
+
+    if (!order.visitRecords) {
+      order.visitRecords = []
+    }
+    order.visitRecords.push(newRecord)
+
+    if (visitData.problemResolved && visitData.satisfaction >= 4) {
+      order.visitStatus = 'completed'
+      order.processLogs.push({
+        time: now,
+        operator: visitor,
+        action: '回访完成',
+        content: `回访完成，住户满意度${visitData.satisfaction}分，问题已解决。${visitData.remark ? '备注：' + visitData.remark : ''}`
+      })
+    } else {
+      order.visitStatus = 'followup'
+      order.processLogs.push({
+        time: now,
+        operator: visitor,
+        action: '回访转跟进',
+        content: `回访发现问题未彻底解决或住户不满意（${visitData.satisfaction}分），转为待跟进状态。原因：${visitData.unresolvedReason || visitData.remark || '未填写'}`
+      })
+    }
+
+    return true
+  },
+
+  convertToFollowup(orderId, operator, reason) {
+    const order = state.repairOrders.find(o => o.id === orderId)
+    if (!order) return false
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    order.visitStatus = 'followup'
+    order.processLogs.push({
+      time: now,
+      operator: operator,
+      action: '转跟进',
+      content: reason || '需要继续跟进处理'
+    })
+
+    return true
+  },
+
+  resolveFollowup(orderId, operator, resultData) {
+    const order = state.repairOrders.find(o => o.id === orderId)
+    if (!order) return false
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    order.visitStatus = 'completed'
+    order.processResult = resultData.processResult || order.processResult
+    order.processLogs.push({
+      time: now,
+      operator: operator,
+      action: '跟进处理完成',
+      content: resultData.processResult || '跟进处理已完成'
+    })
+
+    return true
   }
 }
 
@@ -394,4 +533,4 @@ export function useStore() {
   }
 }
 
-export { repairCategories, urgentLevels, engineers }
+export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap }

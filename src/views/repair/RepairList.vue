@@ -46,6 +46,50 @@
           </select>
         </div>
         <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">回访状态</label>
+          <select v-model="filters.visitStatus" class="select text-sm">
+            <option value="">全部回访状态</option>
+            <option value="pending">待回访</option>
+            <option value="completed">已回访完成</option>
+            <option value="followup">待跟进</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">满意度</label>
+          <select v-model="filters.satisfaction" class="select text-sm">
+            <option value="">全部满意度</option>
+            <option value="5">非常满意 😄</option>
+            <option value="4">满意 🙂</option>
+            <option value="3">一般 😐</option>
+            <option value="2">不满意 😟</option>
+            <option value="1">非常不满意 😠</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">是否需跟进</label>
+          <select v-model="filters.needFollowup" class="select text-sm">
+            <option value="">全部</option>
+            <option value="yes">需要跟进</option>
+            <option value="no">不需要跟进</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">关键词</label>
+          <div class="relative">
+            <input
+              v-model="filters.keyword"
+              type="text"
+              class="input text-sm pl-8"
+              placeholder="搜索工单号、房号、联系人..."
+            />
+            <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4 pt-4 border-t">
+        <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">分类</label>
           <select v-model="filters.category" class="select text-sm">
             <option value="">全部分类</option>
@@ -71,20 +115,6 @@
             <option value="month">近30天</option>
           </select>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">关键词</label>
-          <div class="relative">
-            <input
-              v-model="filters.keyword"
-              type="text"
-              class="input text-sm pl-8"
-              placeholder="搜索工单号、房号、联系人..."
-            />
-            <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -97,8 +127,10 @@
               <th>房号</th>
               <th>联系人</th>
               <th>分类</th>
-              <th>紧急程度</th>
               <th>状态</th>
+              <th>回访状态</th>
+              <th>满意度</th>
+              <th>是否需跟进</th>
               <th>处理人</th>
               <th>创建时间</th>
               <th>操作</th>
@@ -120,10 +152,23 @@
                 <span class="badge bg-gray-100 text-gray-700">{{ getCategoryLabel(order.category) }}</span>
               </td>
               <td>
-                <span class="badge" :class="getUrgencyClass(order.urgency)">{{ getUrgencyLabel(order.urgency) }}</span>
+                <span class="badge" :class="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
               </td>
               <td>
-                <span class="badge" :class="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
+                <span v-if="order.visitStatus" class="badge" :class="getVisitStatusClass(order.visitStatus)">
+                  {{ getVisitStatusLabel(order.visitStatus) }}
+                </span>
+                <span v-else class="text-gray-400 text-xs">-</span>
+              </td>
+              <td>
+                <span v-if="getOrderSatisfaction(order)" class="text-sm">
+                  {{ getOrderSatisfactionEmoji(order) }} {{ getOrderSatisfactionLabel(order) }}
+                </span>
+                <span v-else class="text-gray-400 text-xs">-</span>
+              </td>
+              <td>
+                <span v-if="order.visitStatus === 'followup'" class="badge bg-red-100 text-red-600">需要跟进</span>
+                <span v-else class="text-gray-400 text-xs">-</span>
               </td>
               <td>
                 <span v-if="order.engineerId">{{ getEngineerName(order.engineerId) }}</span>
@@ -152,7 +197,7 @@
 import { ref, reactive, computed, inject, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import dayjs from 'dayjs'
-import { useStore, repairCategories, urgentLevels } from '../../store'
+import { useStore, repairCategories, urgentLevels, satisfactionLevels, visitStatusMap } from '../../store'
 import EmptyState from '../../components/EmptyState.vue'
 
 const router = useRouter()
@@ -167,7 +212,10 @@ const filters = reactive({
   category: '',
   urgency: '',
   timeRange: 'all',
-  keyword: ''
+  keyword: '',
+  visitStatus: '',
+  satisfaction: '',
+  needFollowup: ''
 })
 
 const filteredOrders = computed(() => {
@@ -177,6 +225,26 @@ const filteredOrders = computed(() => {
     if (filters.status && order.status !== filters.status) return false
     if (filters.category && order.category !== filters.category) return false
     if (filters.urgency && order.urgency !== filters.urgency) return false
+
+    if (filters.visitStatus) {
+      if (filters.visitStatus === 'pending') {
+        if (!(order.visitStatus === 'pending' || (order.status === 'completed' && !order.visitStatus))) return false
+      } else {
+        if (order.visitStatus !== filters.visitStatus) return false
+      }
+    }
+
+    if (filters.satisfaction) {
+      const targetSat = parseInt(filters.satisfaction)
+      const orderSat = getOrderSatisfaction(order)
+      if (!orderSat || orderSat !== targetSat) return false
+    }
+
+    if (filters.needFollowup) {
+      const isFollowup = order.visitStatus === 'followup'
+      if (filters.needFollowup === 'yes' && !isFollowup) return false
+      if (filters.needFollowup === 'no' && isFollowup) return false
+    }
     
     if (filters.timeRange !== 'all') {
       const orderDate = dayjs(order.createTime)
@@ -273,6 +341,44 @@ const resetFilters = () => {
   filters.urgency = ''
   filters.timeRange = 'all'
   filters.keyword = ''
+  filters.visitStatus = ''
+  filters.satisfaction = ''
+  filters.needFollowup = ''
   showToast('筛选条件已重置', 'success')
+}
+
+const getVisitStatusLabel = (status) => {
+  return visitStatusMap[status] || status
+}
+
+const getVisitStatusClass = (status) => {
+  switch (status) {
+    case 'pending': return 'bg-orange-100 text-orange-600'
+    case 'visiting': return 'bg-blue-100 text-blue-600'
+    case 'completed': return 'bg-green-100 text-green-600'
+    case 'followup': return 'bg-red-100 text-red-600'
+    case 'closed': return 'bg-gray-100 text-gray-600'
+    default: return 'bg-gray-100 text-gray-600'
+  }
+}
+
+const getOrderSatisfaction = (order) => {
+  if (!order.visitRecords || order.visitRecords.length === 0) return null
+  const lastRecord = order.visitRecords[order.visitRecords.length - 1]
+  return lastRecord.satisfaction
+}
+
+const getOrderSatisfactionLabel = (order) => {
+  const value = getOrderSatisfaction(order)
+  if (!value) return ''
+  const level = satisfactionLevels.find(l => l.value === value)
+  return level ? level.label : value
+}
+
+const getOrderSatisfactionEmoji = (order) => {
+  const value = getOrderSatisfaction(order)
+  if (!value) return ''
+  const level = satisfactionLevels.find(l => l.value === value)
+  return level ? level.emoji : '😐'
 }
 </script>

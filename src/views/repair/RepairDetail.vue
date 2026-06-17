@@ -13,6 +13,9 @@
             工单号：<span class="font-mono">{{ order.id }}</span>
             <span v-if="order.isTimeout" class="ml-2 badge bg-red-100 text-red-600">已超时</span>
             <span v-if="order.needReturn" class="ml-2 badge bg-yellow-100 text-yellow-600">需二次上门</span>
+            <span v-if="order.visitStatus" class="ml-2 badge" :class="getVisitStatusClass(order.visitStatus)">
+              {{ getVisitStatusLabel(order.visitStatus) }}
+            </span>
           </p>
         </div>
       </div>
@@ -28,6 +31,12 @@
         </button>
         <button v-if="currentRole === 'engineer' && order.status === 'processing' && order.arriveTime" @click="showCompleteModal = true" class="btn-success">
           处理完成
+        </button>
+        <button v-if="currentRole === 'service' && order.status === 'completed' && order.visitStatus !== 'completed'" @click="showVisitModal = true" class="btn-primary">
+          {{ order.visitStatus === 'followup' ? '继续回访' : '住户回访' }}
+        </button>
+        <button v-if="currentRole === 'service' && order.visitStatus === 'followup'" @click="showFollowupResolveModal = true" class="btn-success">
+          跟进处理完成
         </button>
         <button v-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status)" @click="showEditModal = true" class="btn-secondary">
           修改信息
@@ -129,6 +138,44 @@
           </div>
         </div>
 
+        <div v-if="order.visitRecords && order.visitRecords.length > 0" class="card p-5">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">回访记录</h2>
+          <div class="space-y-4">
+            <div v-for="(record, idx) in order.visitRecords" :key="record.id" class="p-4 bg-gray-50 rounded-lg">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                  <span class="text-base font-medium text-gray-900">
+                    {{ getSatisfactionEmoji(record.satisfaction) }} {{ getSatisfactionLabel(record.satisfaction) }}
+                  </span>
+                  <span class="badge" :class="record.problemResolved ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
+                    {{ record.problemResolved ? '问题已解决' : '问题未解决' }}
+                  </span>
+                </div>
+                <span class="text-xs text-gray-400">第 {{ idx + 1 }} 次回访</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                <div>
+                  <span class="text-gray-500">回访人：</span>
+                  <span class="font-medium">{{ record.visitor }}</span>
+                </div>
+                <div>
+                  <span class="text-gray-500">回访时间：</span>
+                  <span class="font-medium">{{ record.visitTime }}</span>
+                </div>
+              </div>
+              <div v-if="record.remark" class="mb-2">
+                <p class="text-sm text-gray-500 mb-1">回访备注：</p>
+                <p class="text-sm text-gray-900">{{ record.remark }}</p>
+              </div>
+              <div v-if="!record.problemResolved && record.unresolvedReason" class="p-3 bg-red-50 rounded-md">
+                <p class="text-sm text-red-600">
+                  <span class="font-medium">未解决原因：</span>{{ record.unresolvedReason }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="currentRole === 'engineer' && order.status === 'processing' && order.arriveTime" class="card p-5">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">添加处理记录</h2>
           <div class="space-y-4">
@@ -162,7 +209,11 @@
                     'bg-yellow-100 text-yellow-600': log.action === '到达现场',
                     'bg-gray-100 text-gray-600': log.action === '处理中',
                     'bg-green-500 text-white': log.action === '完成',
-                    'bg-red-100 text-red-600': log.action === '取消'
+                    'bg-red-100 text-red-600': log.action === '取消',
+                    'bg-cyan-100 text-cyan-600': log.action === '回访完成',
+                    'bg-orange-100 text-orange-600': log.action === '回访转跟进' || log.action === '转跟进',
+                    'bg-teal-100 text-teal-600': log.action === '跟进处理完成',
+                    'bg-indigo-100 text-indigo-600': log.action === '临时处理'
                   }"
                 >
                   <svg v-if="log.action === '报修登记'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,6 +234,18 @@
                   </svg>
                   <svg v-else-if="log.action === '取消'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <svg v-else-if="log.action === '回访完成'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <svg v-else-if="log.action === '回访转跟进' || log.action === '转跟进'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <svg v-else-if="log.action === '跟进处理完成'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <svg v-else-if="log.action === '临时处理'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                   <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -361,13 +424,96 @@
         </div>
       </div>
     </Transition>
+
+    <Transition name="fade">
+      <div v-if="showVisitModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">住户回访</h3>
+          <div class="space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-3">住户满意度 <span class="text-red-500">*</span></label>
+              <div class="flex space-x-2">
+                <button
+                  v-for="level in satisfactionLevels"
+                  :key="level.value"
+                  type="button"
+                  @click="visitForm.satisfaction = level.value"
+                  class="flex-1 py-2 px-1 rounded-lg border-2 transition-all text-center"
+                  :class="visitForm.satisfaction === level.value 
+                    ? 'border-primary-500 bg-primary-50 text-primary-700' 
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600'"
+                >
+                  <div class="text-xl">{{ level.emoji }}</div>
+                  <div class="text-xs mt-1">{{ level.label }}</div>
+                </button>
+              </div>
+              <p v-if="visitErrors.satisfaction" class="text-red-500 text-xs mt-2">{{ visitErrors.satisfaction }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-3">住户是否确认问题已彻底解决？ <span class="text-red-500">*</span></label>
+              <div class="flex space-x-3">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input v-model="visitForm.problemResolved" type="radio" :value="true" class="w-4 h-4 text-primary-600" />
+                  <span class="text-sm text-gray-700">已解决</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input v-model="visitForm.problemResolved" type="radio" :value="false" class="w-4 h-4 text-primary-600" />
+                  <span class="text-sm text-gray-700">未解决/反复</span>
+                </label>
+              </div>
+            </div>
+
+            <div v-if="visitForm.problemResolved === false">
+              <label class="block text-sm font-medium text-gray-700 mb-2">未解决/问题反复的原因 <span class="text-red-500">*</span></label>
+              <textarea v-model="visitForm.unresolvedReason" class="textarea h-20" placeholder="请详细说明问题未解决或反复出现的具体情况..."></textarea>
+              <p v-if="visitErrors.unresolvedReason" class="text-red-500 text-xs mt-1">{{ visitErrors.unresolvedReason }}</p>
+              <p class="text-xs text-orange-600 mt-2">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                标记为未解决后，工单将自动转为「待跟进」状态
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">回访备注</label>
+              <textarea v-model="visitForm.remark" class="textarea h-24" placeholder="记录回访过程中的其他信息、住户反馈等..."></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+            <button @click="showVisitModal = false" class="btn-secondary">取消</button>
+            <button @click="handleSubmitVisit" class="btn-primary">提交回访</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="showFollowupResolveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">跟进处理完成</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">跟进处理结果 <span class="text-red-500">*</span></label>
+              <textarea v-model="followupResolveForm.processResult" class="textarea h-28" placeholder="请详细描述跟进处理的过程和最终结果..."></textarea>
+              <p v-if="followupResolveErrors.processResult" class="text-red-500 text-xs mt-1">{{ followupResolveErrors.processResult }}</p>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button @click="showFollowupResolveModal = false" class="btn-secondary">取消</button>
+            <button @click="handleFollowupResolve" class="btn-success">确认完成</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useStore, repairCategories, urgentLevels } from '../../store'
+import { useStore, repairCategories, urgentLevels, satisfactionLevels, visitStatusMap } from '../../store'
 
 const route = useRoute()
 const router = useRouter()
@@ -382,6 +528,8 @@ const showAssignModal = ref(false)
 const showCancelModal = ref(false)
 const showEditModal = ref(false)
 const showCompleteModal = ref(false)
+const showVisitModal = ref(false)
+const showFollowupResolveModal = ref(false)
 const selectedEngineer = ref('')
 const cancelReason = ref('')
 const progressContent = ref('')
@@ -402,6 +550,26 @@ const completeForm = reactive({
 })
 
 const completeErrors = reactive({
+  processResult: ''
+})
+
+const visitForm = reactive({
+  satisfaction: null,
+  problemResolved: null,
+  remark: '',
+  unresolvedReason: ''
+})
+
+const visitErrors = reactive({
+  satisfaction: '',
+  unresolvedReason: ''
+})
+
+const followupResolveForm = reactive({
+  processResult: ''
+})
+
+const followupResolveErrors = reactive({
   processResult: ''
 })
 
@@ -477,6 +645,31 @@ const getSourceLabel = (source) => {
     patrol: '巡逻发现'
   }
   return map[source] || source
+}
+
+const getVisitStatusLabel = (status) => {
+  return visitStatusMap[status] || status
+}
+
+const getVisitStatusClass = (status) => {
+  switch (status) {
+    case 'pending': return 'bg-orange-100 text-orange-600'
+    case 'visiting': return 'bg-blue-100 text-blue-600'
+    case 'completed': return 'bg-green-100 text-green-600'
+    case 'followup': return 'bg-red-100 text-red-600'
+    case 'closed': return 'bg-gray-100 text-gray-600'
+    default: return 'bg-gray-100 text-gray-600'
+  }
+}
+
+const getSatisfactionLabel = (value) => {
+  const level = satisfactionLevels.find(l => l.value === value)
+  return level ? level.label : value
+}
+
+const getSatisfactionEmoji = (value) => {
+  const level = satisfactionLevels.find(l => l.value === value)
+  return level ? level.emoji : '😐'
 }
 
 const getEngineerName = (id) => {
@@ -587,6 +780,84 @@ const handleEdit = () => {
     showEditModal.value = false
   } else {
     showToast('更新失败', 'error')
+  }
+}
+
+const resetVisitForm = () => {
+  visitForm.satisfaction = null
+  visitForm.problemResolved = null
+  visitForm.remark = ''
+  visitForm.unresolvedReason = ''
+  visitErrors.satisfaction = ''
+  visitErrors.unresolvedReason = ''
+}
+
+const handleSubmitVisit = () => {
+  let hasError = false
+  visitErrors.satisfaction = ''
+  visitErrors.unresolvedReason = ''
+
+  if (!visitForm.satisfaction) {
+    visitErrors.satisfaction = '请选择住户满意度'
+    hasError = true
+  }
+
+  if (visitForm.problemResolved === null) {
+    showToast('请选择问题是否已彻底解决', 'error')
+    hasError = true
+  }
+
+  if (visitForm.problemResolved === false && !visitForm.unresolvedReason.trim()) {
+    visitErrors.unresolvedReason = '请填写问题未解决或反复的原因'
+    hasError = true
+  }
+
+  if (hasError) return
+
+  const visitor = currentRole.value === 'service' ? '张客服' : '操作员'
+  const success = store.addVisitRecord(orderId, visitor, {
+    satisfaction: visitForm.satisfaction,
+    problemResolved: visitForm.problemResolved,
+    remark: visitForm.remark,
+    unresolvedReason: visitForm.problemResolved === false ? visitForm.unresolvedReason : null
+  })
+
+  if (success) {
+    if (visitForm.problemResolved && visitForm.satisfaction >= 4) {
+      showToast('回访提交成功，工单已标记为已回访完成', 'success')
+    } else {
+      showToast('回访提交成功，工单已转为待跟进状态', 'warning')
+    }
+    showVisitModal.value = false
+    resetVisitForm()
+  } else {
+    showToast('回访提交失败', 'error')
+  }
+}
+
+const resetFollowupResolveForm = () => {
+  followupResolveForm.processResult = ''
+  followupResolveErrors.processResult = ''
+}
+
+const handleFollowupResolve = () => {
+  if (!followupResolveForm.processResult.trim()) {
+    followupResolveErrors.processResult = '请填写跟进处理结果'
+    return
+  }
+  followupResolveErrors.processResult = ''
+
+  const operator = currentRole.value === 'service' ? '张客服' : '操作员'
+  const success = store.resolveFollowup(orderId, operator, {
+    processResult: followupResolveForm.processResult
+  })
+
+  if (success) {
+    showToast('跟进处理已完成', 'success')
+    showFollowupResolveModal.value = false
+    resetFollowupResolveForm()
+  } else {
+    showToast('操作失败', 'error')
   }
 }
 </script>
