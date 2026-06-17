@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500;
+  }
+  
+  .btn-success {
+    @apply btn bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;
+  }
+  
+  .btn-warning {
+    @apply btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1 text-sm;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+  
+  .select {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white;
+  }
+  
+  .textarea {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .table {
+    @apply w-full border-collapse;
+  }
+  
+  .table th {
+    @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200;
+  }
+  
+  .table td {
+    @apply px-4 py-4 whitespace-nowrap text-sm text-gray-900 border-b border-gray-100;
+  }
+  
+  .table tr:hover td {
+    @apply bg-gray-50;
+  }
+}
