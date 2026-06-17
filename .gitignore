@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+训练记录.md
