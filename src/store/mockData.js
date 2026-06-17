@@ -101,7 +101,15 @@ const generateRepairOrders = () => {
     returnReason: null,
     remarks: '',
     isTimeout: false,
-    source: 'resident'
+    source: 'resident',
+    urgeRecords: [],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   orders.push({
@@ -123,14 +131,32 @@ const generateRepairOrders = () => {
     engineerId: 'ENG001',
     processLogs: [
       { time: today.format('YYYY-MM-DD') + ' 08:45:00', operator: '系统', action: '报修登记', content: '李先生电话报修客厅插座无电' },
-      { time: today.format('YYYY-MM-DD') + ' 08:50:00', operator: '张客服', action: '派单', content: '已派单给李工程师处理' }
+      { time: today.format('YYYY-MM-DD') + ' 08:50:00', operator: '张客服', action: '派单', content: '已派单给李工程师处理' },
+      { time: today.format('YYYY-MM-DD') + ' 10:30:00', operator: '张客服', action: '催办', content: '催办原因：派单后长时间未接单，住户来电询问。催办对象：李工程师' }
     ],
     processResult: null,
     needReturn: false,
     returnReason: null,
     remarks: '客户白天都在家',
     isTimeout: false,
-    source: 'phone'
+    source: 'phone',
+    urgeRecords: [
+      {
+        id: 'UR002',
+        urgeTime: today.format('YYYY-MM-DD') + ' 10:30:00',
+        urgeOperator: '张客服',
+        urgeReason: '派单后超过1小时未接单，住户来电询问进度，希望尽快安排人员上门处理',
+        urgeTarget: '李工程师',
+        urgeTargetType: 'engineer'
+      }
+    ],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   orders.push({
@@ -162,7 +188,15 @@ const generateRepairOrders = () => {
     returnReason: null,
     remarks: '电梯问题，已联系专业维保单位配合处理',
     isTimeout: false,
-    source: 'phone'
+    source: 'phone',
+    urgeRecords: [],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   orders.push({
@@ -187,14 +221,33 @@ const generateRepairOrders = () => {
       { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:40:00', operator: '张客服', action: '派单', content: '派单给王师傅处理' },
       { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:45:00', operator: '王师傅', action: '接单', content: '已接单' },
       { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 15:20:00', operator: '王师傅', action: '到达现场', content: '已到达，开始疏通管道' },
-      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:30:00', operator: '王师傅', action: '处理中', content: '经检查是主管道堵塞，需要专业设备疏通，已联系专业疏通公司明天上门' }
+      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:30:00', operator: '王师傅', action: '处理中', content: '经检查是主管道堵塞，需要专业设备疏通，已联系专业疏通公司明天上门' },
+      { time: today.format('YYYY-MM-DD') + ' 08:15:00', operator: '张客服', action: '催办', content: '催办原因：住户多次来电询问进度，昨晚无法正常使用卫生间。催办对象：王师傅' },
+      { time: today.format('YYYY-MM-DD') + ' 09:00:00', operator: '张客服', action: '升级重点跟进', content: '升级原因：催办后仍无明显进展，住户情绪激动，担心今天仍无法解决。要求完成时限：今日12:00前必须有明确处理方案' }
     ],
     processResult: null,
     needReturn: true,
     returnReason: '需要专业疏通设备，已联系外协单位',
     remarks: '客户比较着急，已经沟通好明天上午处理',
     isTimeout: true,
-    source: 'resident'
+    source: 'resident',
+    urgeRecords: [
+      {
+        id: 'UR001',
+        urgeTime: today.format('YYYY-MM-DD') + ' 08:15:00',
+        urgeOperator: '张客服',
+        urgeReason: '住户多次来电询问进度，昨晚无法正常使用卫生间，情绪比较焦急，要求今天上午必须解决',
+        urgeTarget: '王师傅',
+        urgeTargetType: 'engineer'
+      }
+    ],
+    escalation: {
+      isEscalated: true,
+      escalateTime: today.format('YYYY-MM-DD') + ' 09:00:00',
+      escalateOperator: '张客服',
+      escalateReason: '催办后仍无明显进展，住户情绪激动，已投诉到物业经理，担心今天仍无法解决，影响正常生活',
+      deadlineTime: today.format('YYYY-MM-DD') + ' 12:00:00'
+    }
   })
   
   orders.push({
@@ -228,7 +281,15 @@ const generateRepairOrders = () => {
     isTimeout: false,
     source: 'phone',
     visitStatus: 'pending',
-    visitRecords: []
+    visitRecords: [],
+    urgeRecords: [],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   orders.push({
@@ -274,7 +335,15 @@ const generateRepairOrders = () => {
         remark: '住户反映阳台天花板仍然有渗水痕迹，问题没有彻底解决，需要再次安排工程人员上门检查。楼上业主说还没来得及安排维修。',
         unresolvedReason: '楼上防水层未修复，渗水问题持续，需要再次协调并跟进处理'
       }
-    ]
+    ],
+    urgeRecords: [],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   orders.push({
@@ -319,7 +388,15 @@ const generateRepairOrders = () => {
         remark: '住户表示门锁现在开关非常顺畅，对刘师傅的服务态度和处理速度都非常满意，没有其他问题。',
         unresolvedReason: null
       }
-    ]
+    ],
+    urgeRecords: [],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   orders.push({
@@ -364,7 +441,15 @@ const generateRepairOrders = () => {
         remark: '住户反映可视对讲使用正常，对处理结果满意，就是上门时间稍微晚了一点。',
         unresolvedReason: null
       }
-    ]
+    ],
+    urgeRecords: [],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   orders.push({
@@ -393,7 +478,15 @@ const generateRepairOrders = () => {
     returnReason: null,
     remarks: '误报，客户自行联系厂家处理',
     isTimeout: false,
-    source: 'phone'
+    source: 'phone',
+    urgeRecords: [],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   orders.push({
@@ -438,7 +531,15 @@ const generateRepairOrders = () => {
         remark: '保安确认地下车库B区照明已全部恢复正常，夜间临时照明的应急处理也很及时，整体满意。',
         unresolvedReason: null
       }
-    ]
+    ],
+    urgeRecords: [],
+    escalation: {
+      isEscalated: false,
+      escalateTime: null,
+      escalateOperator: null,
+      escalateReason: null,
+      deadlineTime: null
+    }
   })
   
   for (let i = 1; i <= 15; i++) {
@@ -491,7 +592,15 @@ const generateRepairOrders = () => {
       isTimeout: false,
       source: ['resident', 'phone'][Math.floor(Math.random() * 2)],
       visitStatus: !needVisit ? null : (visited ? 'completed' : 'pending'),
-      visitRecords: visitRecord
+      visitRecords: visitRecord,
+      urgeRecords: [],
+      escalation: {
+        isEscalated: false,
+        escalateTime: null,
+        escalateOperator: null,
+        escalateReason: null,
+        deadlineTime: null
+      }
     })
   }
   

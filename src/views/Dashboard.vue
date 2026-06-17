@@ -16,7 +16,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="card p-5">
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow" @click="goToRepairListWithFilter('today')">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500">今日新报修</p>
@@ -31,46 +31,46 @@
         </div>
       </div>
 
-      <div class="card p-5">
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow" @click="goToRepairListWithFilter('urged')">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-500">今日待回访</p>
-            <p class="text-3xl font-bold text-orange-600 mt-1">{{ todayPendingVisits.length }}</p>
-            <p class="text-xs text-gray-400 mt-1">需要客服回访</p>
+            <p class="text-sm font-medium text-gray-500">今日催办</p>
+            <p class="text-3xl font-bold text-orange-600 mt-1">{{ todayUrgeOrders.length }}</p>
+            <p class="text-xs text-orange-500 mt-1">需要加快处理</p>
           </div>
           <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
           </div>
         </div>
       </div>
 
-      <div class="card p-5">
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow" @click="goToRepairListWithFilter('escalated')">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-500">今日已回访</p>
-            <p class="text-3xl font-bold text-cyan-600 mt-1">{{ todayCompletedVisits.length }}</p>
-            <p class="text-xs text-gray-400 mt-1">今日完成回访</p>
+            <p class="text-sm font-medium text-gray-500">今日升级</p>
+            <p class="text-3xl font-bold text-red-600 mt-1">{{ todayEscalateOrders.length }}</p>
+            <p class="text-xs text-red-500 mt-1">升级为重点跟进</p>
           </div>
-          <div class="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center">
-            <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
         </div>
       </div>
 
-      <div class="card p-5">
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow" @click="goToRepairListWithFilter('keyFollowup')">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-500">回访满意率</p>
-            <p class="text-3xl font-bold text-green-600 mt-1">{{ visitSatisfactionRate }}%</p>
-            <p class="text-xs text-gray-400 mt-1">综合满意度</p>
+            <p class="text-sm font-medium text-gray-500">重点跟进工单</p>
+            <p class="text-3xl font-bold text-rose-700 mt-1">{{ keyFollowupOrders.length }}</p>
+            <p class="text-xs text-rose-600 mt-1">正在重点跟进中</p>
           </div>
-          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+          <div class="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
           </div>
         </div>
@@ -189,7 +189,17 @@
               </div>
             </div>
             <div class="text-right">
-              <span class="badge" :class="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
+              <div class="flex flex-col items-end space-y-1">
+                <span class="badge" :class="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
+                <div class="flex space-x-1">
+                  <span v-if="order.urgeRecords && order.urgeRecords.length > 0" class="badge bg-orange-100 text-orange-600 text-xs">
+                    催{{ order.urgeRecords.length }}
+                  </span>
+                  <span v-if="order.escalation && order.escalation.isEscalated" class="badge bg-red-500 text-white text-xs">
+                    重点
+                  </span>
+                </div>
+              </div>
               <p class="text-xs text-gray-400 mt-1">{{ order.createTime.slice(11, 16) }}</p>
             </div>
           </div>
@@ -257,7 +267,10 @@ const {
   todayCompletedVisits,
   followupOrders,
   visitSatisfactionRate,
-  last7DaysSatisfaction
+  last7DaysSatisfaction,
+  todayUrgeOrders,
+  todayEscalateOrders,
+  keyFollowupOrders
 } = store
 
 const trendChartRef = ref(null)
@@ -332,6 +345,20 @@ const getInspectionStatusLabel = (status) => {
 
 const goToDetail = (id) => {
   router.push(`/repair/${id}`)
+}
+
+const goToRepairListWithFilter = (filterType) => {
+  const query = {}
+  if (filterType === 'today') {
+    query.timeRange = 'today'
+  } else if (filterType === 'urged') {
+    query.isUrged = 'yes'
+  } else if (filterType === 'escalated') {
+    query.isEscalated = 'yes'
+  } else if (filterType === 'keyFollowup') {
+    query.isEscalated = 'yes'
+  }
+  router.push({ path: '/repair', query })
 }
 
 const goToInspection = (task) => {

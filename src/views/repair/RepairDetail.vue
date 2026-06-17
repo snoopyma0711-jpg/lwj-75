@@ -16,10 +16,16 @@
             <span v-if="order.visitStatus" class="ml-2 badge" :class="getVisitStatusClass(order.visitStatus)">
               {{ getVisitStatusLabel(order.visitStatus) }}
             </span>
+            <span v-if="order.urgeRecords && order.urgeRecords.length > 0" class="ml-2 badge bg-orange-100 text-orange-600">
+              已催办{{ order.urgeRecords.length }}次
+            </span>
+            <span v-if="order.escalation && order.escalation.isEscalated" class="ml-2 badge bg-red-500 text-white">
+              重点跟进
+            </span>
           </p>
         </div>
       </div>
-      <div class="flex space-x-3">
+      <div class="flex space-x-3 flex-wrap">
         <button v-if="currentRole === 'service' && order.status === 'pending'" @click="showAssignModal = true" class="btn-primary">
           派单
         </button>
@@ -37,6 +43,30 @@
         </button>
         <button v-if="currentRole === 'service' && order.visitStatus === 'followup'" @click="showFollowupResolveModal = true" class="btn-success">
           跟进处理完成
+        </button>
+        <button 
+          v-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status)" 
+          @click="showUrgeModal = true" 
+          class="btn btn-warning"
+        >
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            催办工单
+          </span>
+        </button>
+        <button 
+          v-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status) && (!order.escalation || !order.escalation.isEscalated)" 
+          @click="showEscalateModal = true" 
+          class="btn btn-danger"
+        >
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            升级重点跟进
+          </span>
         </button>
         <button v-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status)" @click="showEditModal = true" class="btn-secondary">
           修改信息
@@ -98,6 +128,79 @@
           <div v-if="order.remarks" class="mt-4 pt-4 border-t">
             <p class="text-sm text-gray-500 mb-1">客服备注：</p>
             <p class="text-sm text-gray-900">{{ order.remarks }}</p>
+          </div>
+        </div>
+
+        <div v-if="order.escalation && order.escalation.isEscalated" class="card p-5 border-2 border-red-200 bg-red-50">
+          <div class="flex items-start justify-between mb-4">
+            <h2 class="text-lg font-semibold text-red-700 flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              重点跟进工单信息
+            </h2>
+            <span class="badge bg-red-500 text-white">已升级</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-gray-500">升级时间：</span>
+              <span class="font-medium">{{ order.escalation.escalateTime }}</span>
+            </div>
+            <div>
+              <span class="text-gray-500">升级人：</span>
+              <span class="font-medium">{{ order.escalation.escalateOperator }}</span>
+            </div>
+            <div class="col-span-2">
+              <span class="text-gray-500">要求完成时限：</span>
+              <span class="font-medium text-red-700 font-bold">{{ order.escalation.deadlineTime }}</span>
+              <span v-if="isDeadlineApproaching(order.escalation.deadlineTime)" class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full animate-pulse">
+                即将到期！
+              </span>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-red-200">
+            <p class="text-sm text-gray-500 mb-1">升级原因：</p>
+            <p class="text-sm text-gray-900 bg-white p-3 rounded-md border border-red-100">{{ order.escalation.escalateReason }}</p>
+          </div>
+        </div>
+
+        <div v-if="order.urgeRecords && order.urgeRecords.length > 0" class="card p-5 border border-orange-200">
+          <div class="flex items-start justify-between mb-4">
+            <h2 class="text-lg font-semibold text-orange-700 flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              催办记录
+              <span class="ml-2 badge bg-orange-100 text-orange-600">共{{ order.urgeRecords.length }}次</span>
+            </h2>
+          </div>
+          <div class="space-y-4">
+            <div 
+              v-for="(record, idx) in [...order.urgeRecords].reverse()" 
+              :key="record.id" 
+              class="p-4 bg-orange-50 rounded-lg border border-orange-100"
+            >
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                  <span class="badge bg-orange-500 text-white">第 {{ order.urgeRecords.length - idx }} 次催办</span>
+                </div>
+                <span class="text-xs text-gray-500">{{ record.urgeTime }}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                <div>
+                  <span class="text-gray-500">催办人：</span>
+                  <span class="font-medium">{{ record.urgeOperator }}</span>
+                </div>
+                <div>
+                  <span class="text-gray-500">催办对象：</span>
+                  <span class="font-medium text-orange-700">{{ record.urgeTarget }}</span>
+                </div>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500 mb-1">催办原因：</p>
+                <p class="text-sm text-gray-900 bg-white p-3 rounded-md border border-orange-100">{{ record.urgeReason }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -213,7 +316,9 @@
                     'bg-cyan-100 text-cyan-600': log.action === '回访完成',
                     'bg-orange-100 text-orange-600': log.action === '回访转跟进' || log.action === '转跟进',
                     'bg-teal-100 text-teal-600': log.action === '跟进处理完成',
-                    'bg-indigo-100 text-indigo-600': log.action === '临时处理'
+                    'bg-indigo-100 text-indigo-600': log.action === '临时处理',
+                    'bg-orange-500 text-white': log.action === '催办',
+                    'bg-red-600 text-white': log.action === '升级重点跟进'
                   }"
                 >
                   <svg v-if="log.action === '报修登记'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,6 +351,12 @@
                   </svg>
                   <svg v-else-if="log.action === '临时处理'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <svg v-else-if="log.action === '催办'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <svg v-else-if="log.action === '升级重点跟进'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -507,6 +618,96 @@
         </div>
       </div>
     </Transition>
+
+    <Transition name="fade">
+      <div v-if="showUrgeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            工单催办
+          </h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">催办对象 <span class="text-red-500">*</span></label>
+              <select v-model="urgeForm.targetId" class="select" @change="urgeErrors.targetId = ''">
+                <option value="">请选择催办对象</option>
+                <option v-if="order.engineerId" :value="order.engineerId">
+                  处理工程师：{{ getEngineerName(order.engineerId) }}
+                </option>
+                <option value="service_team">客服主管团队</option>
+                <option value="engineering_dept">工程部主管</option>
+              </select>
+              <p v-if="urgeErrors.targetId" class="text-red-500 text-xs mt-1">{{ urgeErrors.targetId }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">催办原因 <span class="text-red-500">*</span></label>
+              <textarea 
+                v-model="urgeForm.reason" 
+                class="textarea h-28" 
+                placeholder="请详细描述催办原因，例如：长时间未接单、处理进度卡住、住户多次来电催问等..."
+                @input="urgeErrors.reason = ''"
+              ></textarea>
+              <p v-if="urgeErrors.reason" class="text-red-500 text-xs mt-1">{{ urgeErrors.reason }}</p>
+              <p class="text-xs text-gray-500 mt-2">催办记录将完整保存到工单处理记录中，催办信息会同步通知相关人员</p>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+            <button @click="closeUrgeModal" class="btn-secondary">取消</button>
+            <button @click="submitUrge" class="btn btn-warning">确认催办</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="showEscalateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            升级为重点跟进工单
+          </h3>
+          <div class="mb-4 p-3 bg-red-50 rounded-lg border border-red-100">
+            <p class="text-sm text-red-700">
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              升级后此工单将标记为重点跟进，会在首页和列表中突出显示，并通知相关主管关注处理进度。
+            </p>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">升级原因 <span class="text-red-500">*</span></label>
+              <textarea 
+                v-model="escalateForm.reason" 
+                class="textarea h-28" 
+                placeholder="请详细说明升级为重点跟进工单的原因，例如：催办后仍无进展、问题严重影响住户生活、存在安全隐患、领导特别关注等..."
+                @input="escalateErrors.reason = ''"
+              ></textarea>
+              <p v-if="escalateErrors.reason" class="text-red-500 text-xs mt-1">{{ escalateErrors.reason }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">要求完成时限 <span class="text-red-500">*</span></label>
+              <input 
+                v-model="escalateForm.deadlineTime" 
+                type="datetime-local" 
+                class="input"
+                @input="escalateErrors.deadlineTime = ''"
+              />
+              <p v-if="escalateErrors.deadlineTime" class="text-red-500 text-xs mt-1">{{ escalateErrors.deadlineTime }}</p>
+              <p class="text-xs text-gray-500 mt-2">请设定明确的处理截止时间，超时未完成将自动触发更高层级关注</p>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+            <button @click="closeEscalateModal" class="btn-secondary">取消</button>
+            <button @click="submitEscalate" class="btn-danger">确认升级</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -514,6 +715,7 @@
 import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore, repairCategories, urgentLevels, satisfactionLevels, visitStatusMap } from '../../store'
+import dayjs from 'dayjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -530,6 +732,8 @@ const showEditModal = ref(false)
 const showCompleteModal = ref(false)
 const showVisitModal = ref(false)
 const showFollowupResolveModal = ref(false)
+const showUrgeModal = ref(false)
+const showEscalateModal = ref(false)
 const selectedEngineer = ref('')
 const cancelReason = ref('')
 const progressContent = ref('')
@@ -571,6 +775,26 @@ const followupResolveForm = reactive({
 
 const followupResolveErrors = reactive({
   processResult: ''
+})
+
+const urgeForm = reactive({
+  targetId: '',
+  reason: ''
+})
+
+const urgeErrors = reactive({
+  targetId: '',
+  reason: ''
+})
+
+const escalateForm = reactive({
+  reason: '',
+  deadlineTime: ''
+})
+
+const escalateErrors = reactive({
+  reason: '',
+  deadlineTime: ''
 })
 
 const relatedEquipment = computed(() => {
@@ -687,6 +911,122 @@ const getEngineerName = (id) => {
 
 const goToOrder = (id) => {
   router.push(`/repair/${id}`)
+}
+
+const isDeadlineApproaching = (deadlineTime) => {
+  if (!deadlineTime) return false
+  const deadline = dayjs(deadlineTime)
+  const now = dayjs()
+  const diffHours = deadline.diff(now, 'hour')
+  return diffHours <= 4
+}
+
+const closeUrgeModal = () => {
+  showUrgeModal.value = false
+  urgeForm.targetId = ''
+  urgeForm.reason = ''
+  urgeErrors.targetId = ''
+  urgeErrors.reason = ''
+}
+
+const submitUrge = () => {
+  let hasError = false
+  urgeErrors.targetId = ''
+  urgeErrors.reason = ''
+
+  if (!urgeForm.targetId) {
+    urgeErrors.targetId = '请选择催办对象'
+    hasError = true
+  }
+
+  if (!urgeForm.reason.trim()) {
+    urgeErrors.reason = '请填写催办原因'
+    hasError = true
+  } else if (urgeForm.reason.trim().length < 10) {
+    urgeErrors.reason = '催办原因至少需要10个字，请详细描述'
+    hasError = true
+  }
+
+  if (hasError) return
+
+  let targetName = ''
+  let targetType = ''
+  if (urgeForm.targetId === order.value.engineerId) {
+    targetName = getEngineerName(order.value.engineerId)
+    targetType = 'engineer'
+  } else if (urgeForm.targetId === 'service_team') {
+    targetName = '客服主管团队'
+    targetType = 'service_team'
+  } else if (urgeForm.targetId === 'engineering_dept') {
+    targetName = '工程部主管'
+    targetType = 'engineering_dept'
+  }
+
+  const operator = currentRole.value === 'service' ? '张客服' : '操作员'
+  const result = store.urgeOrder(orderId, {
+    operator: operator,
+    reason: urgeForm.reason.trim(),
+    targetName: targetName,
+    targetType: targetType
+  })
+
+  if (result) {
+    showToast('催办成功，已通知催办对象并记录催办信息', 'success')
+    closeUrgeModal()
+  } else {
+    showToast('催办失败，请重试', 'error')
+  }
+}
+
+const closeEscalateModal = () => {
+  showEscalateModal.value = false
+  escalateForm.reason = ''
+  escalateForm.deadlineTime = ''
+  escalateErrors.reason = ''
+  escalateErrors.deadlineTime = ''
+}
+
+const submitEscalate = () => {
+  let hasError = false
+  escalateErrors.reason = ''
+  escalateErrors.deadlineTime = ''
+
+  if (!escalateForm.reason.trim()) {
+    escalateErrors.reason = '请填写升级原因'
+    hasError = true
+  } else if (escalateForm.reason.trim().length < 15) {
+    escalateErrors.reason = '升级原因至少需要15个字，请详细说明情况'
+    hasError = true
+  }
+
+  if (!escalateForm.deadlineTime) {
+    escalateErrors.deadlineTime = '请选择要求完成时限'
+    hasError = true
+  } else {
+    const deadline = dayjs(escalateForm.deadlineTime)
+    const now = dayjs('2026-06-17')
+    if (deadline.isBefore(now)) {
+      escalateErrors.deadlineTime = '完成时限不能早于当前时间'
+      hasError = true
+    }
+  }
+
+  if (hasError) return
+
+  const operator = currentRole.value === 'service' ? '张客服' : '操作员'
+  const formattedDeadline = dayjs(escalateForm.deadlineTime).format('YYYY-MM-DD HH:mm:ss')
+  const result = store.escalateOrder(orderId, {
+    operator: operator,
+    reason: escalateForm.reason.trim(),
+    deadlineTime: formattedDeadline
+  })
+
+  if (result) {
+    showToast('升级成功，该工单已标记为重点跟进工单', 'warning')
+    closeEscalateModal()
+  } else {
+    showToast('升级失败，请重试', 'error')
+  }
 }
 
 const handleAssign = () => {

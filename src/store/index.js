@@ -43,6 +43,29 @@ const getters = {
       order.completeTime && dayjs(order.completeTime).format('YYYY-MM-DD') === state.currentDate
     )
   }),
+
+  todayUrgeOrders: computed(() => {
+    return state.repairOrders.filter(order => {
+      if (!order.urgeRecords || order.urgeRecords.length === 0) return false
+      return order.urgeRecords.some(ur => 
+        dayjs(ur.urgeTime).format('YYYY-MM-DD') === state.currentDate
+      )
+    })
+  }),
+
+  todayEscalateOrders: computed(() => {
+    return state.repairOrders.filter(order => {
+      if (!order.escalation || !order.escalation.isEscalated) return false
+      return dayjs(order.escalation.escalateTime).format('YYYY-MM-DD') === state.currentDate
+    })
+  }),
+
+  keyFollowupOrders: computed(() => {
+    return state.repairOrders.filter(order => {
+      if (!order.escalation || !order.escalation.isEscalated) return false
+      return order.status !== 'completed' && order.status !== 'cancelled'
+    })
+  }),
   
   processingOrders: computed(() => {
     return state.repairOrders.filter(order => 
@@ -158,11 +181,82 @@ const actions = {
       needReturn: false,
       returnReason: null,
       isTimeout: false,
-      source: 'manual'
+      source: 'manual',
+      urgeRecords: [],
+      escalation: {
+        isEscalated: false,
+        escalateTime: null,
+        escalateOperator: null,
+        escalateReason: null,
+        deadlineTime: null
+      }
     }
     
     state.repairOrders.unshift(newOrder)
     return newOrder
+  },
+
+  urgeOrder(orderId, urgeData) {
+    const order = state.repairOrders.find(o => o.id === orderId)
+    if (!order) return false
+    
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    const urgeId = `UR${Date.now()}`
+    
+    if (!order.urgeRecords) {
+      order.urgeRecords = []
+    }
+    
+    const urgeRecord = {
+      id: urgeId,
+      urgeTime: now,
+      urgeOperator: urgeData.operator,
+      urgeReason: urgeData.reason,
+      urgeTarget: urgeData.targetName,
+      urgeTargetType: urgeData.targetType
+    }
+    order.urgeRecords.push(urgeRecord)
+    
+    order.processLogs.push({
+      time: now,
+      operator: urgeData.operator,
+      action: '催办',
+      content: `催办原因：${urgeData.reason}。催办对象：${urgeData.targetName}`
+    })
+    
+    return urgeRecord
+  },
+
+  escalateOrder(orderId, escalateData) {
+    const order = state.repairOrders.find(o => o.id === orderId)
+    if (!order) return false
+    
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    
+    if (!order.escalation) {
+      order.escalation = {
+        isEscalated: false,
+        escalateTime: null,
+        escalateOperator: null,
+        escalateReason: null,
+        deadlineTime: null
+      }
+    }
+    
+    order.escalation.isEscalated = true
+    order.escalation.escalateTime = now
+    order.escalation.escalateOperator = escalateData.operator
+    order.escalation.escalateReason = escalateData.reason
+    order.escalation.deadlineTime = escalateData.deadlineTime
+    
+    order.processLogs.push({
+      time: now,
+      operator: escalateData.operator,
+      action: '升级重点跟进',
+      content: `升级原因：${escalateData.reason}。要求完成时限：${escalateData.deadlineTime}`
+    })
+    
+    return true
   },
   
   assignOrder(orderId, engineerId) {
