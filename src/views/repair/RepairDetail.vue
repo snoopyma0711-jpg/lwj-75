@@ -57,9 +57,22 @@
           </span>
         </button>
         <button 
-          v-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status) && (!order.escalation || !order.escalation.isEscalated)" 
+          v-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status) && (!order.escalation || !order.escalation.isEscalated) && order.urgeRecords && order.urgeRecords.length > 0" 
           @click="showEscalateModal = true" 
           class="btn btn-danger"
+        >
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            升级重点跟进
+          </span>
+        </button>
+        <button 
+          v-else-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status) && (!order.escalation || !order.escalation.isEscalated)" 
+          disabled
+          class="btn btn-danger opacity-50 cursor-not-allowed"
+          title="请先催办，催办后无进展才能升级为重点跟进"
         >
           <span class="flex items-center">
             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -987,6 +1000,11 @@ const closeEscalateModal = () => {
 }
 
 const submitEscalate = () => {
+  if (!order.value || !order.value.urgeRecords || order.value.urgeRecords.length === 0) {
+    showToast('请先催办，催办后无进展才能升级为重点跟进', 'error')
+    return
+  }
+
   let hasError = false
   escalateErrors.reason = ''
   escalateErrors.deadlineTime = ''
@@ -1004,7 +1022,7 @@ const submitEscalate = () => {
     hasError = true
   } else {
     const deadline = dayjs(escalateForm.deadlineTime)
-    const now = dayjs('2026-06-17')
+    const now = dayjs()
     if (deadline.isBefore(now)) {
       escalateErrors.deadlineTime = '完成时限不能早于当前时间'
       hasError = true

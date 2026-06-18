@@ -231,6 +231,10 @@ const actions = {
     const order = state.repairOrders.find(o => o.id === orderId)
     if (!order) return false
     
+    if (!order.urgeRecords || order.urgeRecords.length === 0) {
+      return false
+    }
+    
     const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     
     if (!order.escalation) {

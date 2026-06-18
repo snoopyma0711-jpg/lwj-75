@@ -237,12 +237,19 @@
                     催办
                   </button>
                   <button 
-                    v-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status) && (!order.escalation || !order.escalation.isEscalated)" 
+                    v-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status) && (!order.escalation || !order.escalation.isEscalated) && order.urgeRecords && order.urgeRecords.length > 0" 
                     @click.stop="openEscalateModal(order)" 
                     class="text-red-600 hover:text-red-800 text-sm font-medium"
                   >
                     升级
                   </button>
+                  <span 
+                    v-else-if="currentRole === 'service' && !['completed', 'cancelled'].includes(order.status) && (!order.escalation || !order.escalation.isEscalated)" 
+                    class="text-gray-400 text-sm"
+                    title="请先催办，催办后无进展才能升级"
+                  >
+                    升级
+                  </span>
                 </div>
               </td>
             </tr>
@@ -606,6 +613,12 @@ const closeEscalateModal = () => {
 }
 
 const submitEscalate = () => {
+  const order = store.getOrderById(escalateForm.orderId)
+  if (!order || !order.urgeRecords || order.urgeRecords.length === 0) {
+    showToast('请先催办，催办后无进展才能升级为重点跟进', 'error')
+    return
+  }
+
   let hasError = false
   escalateErrors.reason = ''
   escalateErrors.deadlineTime = ''
@@ -623,7 +636,7 @@ const submitEscalate = () => {
     hasError = true
   } else {
     const deadline = dayjs(escalateForm.deadlineTime)
-    const now = dayjs('2026-06-17')
+    const now = dayjs()
     if (deadline.isBefore(now)) {
       escalateErrors.deadlineTime = '完成时限不能早于当前时间'
       hasError = true
