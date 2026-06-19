@@ -10,7 +10,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <h1 class="ml-3 text-xl font-bold text-gray-900">小区报修与巡检协同台</h1>
+              <h1 class="ml-3 text-xl font-bold text-gray-900">小区访客预约与放行协同台</h1>
             </div>
             <nav class="hidden md:ml-10 md:flex md:space-x-1">
               <router-link
@@ -31,15 +31,16 @@
             <div class="flex items-center space-x-2">
               <span class="text-sm text-gray-500">当前角色：</span>
               <select v-model="currentRole" class="select text-sm py-1 w-auto">
-                <option value="service">物业客服</option>
-                <option value="engineer">工程人员</option>
+                <option value="service">物业前台</option>
+                <option value="housekeeper">楼栋管家</option>
+                <option value="security">安保人员</option>
               </select>
             </div>
             <div class="flex items-center">
               <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <span class="text-sm font-medium text-gray-600">{{ currentRole === 'service' ? '客' : '工' }}</span>
+                <span class="text-sm font-medium text-gray-600">{{ roleBadge }}</span>
               </div>
-              <span class="ml-2 text-sm font-medium text-gray-700">{{ currentRole === 'service' ? '张客服' : '李工程师' }}</span>
+              <span class="ml-2 text-sm font-medium text-gray-700">{{ roleName }}</span>
             </div>
           </div>
         </div>
@@ -47,9 +48,11 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <transition name="fade" mode="out-in">
-        <router-view />
-      </transition>
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
 
     <Transition name="slide-up">
@@ -83,17 +86,25 @@
 </template>
 
 <script setup>
-import { ref, provide } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, provide } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 const currentRole = ref('service')
 
+const roleBadge = computed(() => {
+  const map = { service: '前', housekeeper: '管', security: '安' }
+  return map[currentRole.value] || '用'
+})
+const roleName = computed(() => {
+  const map = { service: '张前台', housekeeper: '楼栋管家-小赵', security: '安保-陈队长' }
+  return map[currentRole.value] || '操作员'
+})
+
 const menuItems = [
-  { path: '/', name: '首页' },
-  { path: '/repair', name: '报修管理' },
-  { path: '/inspection', name: '巡检管理' },
-  { path: '/ledger/buildings', name: '台账管理' }
+  { path: '/', name: '首页仪表盘' },
+  { path: '/visitor', name: '访客预约' }
 ]
 
 const toast = ref({

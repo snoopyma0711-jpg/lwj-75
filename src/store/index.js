@@ -11,7 +11,12 @@ import {
   serviceStaff,
   satisfactionLevels,
   visitStatusMap,
-  generateRepairOrders 
+  visitorPurposes,
+  visitorStatusMap,
+  visitorStatusColorMap,
+  visitorRecords,
+  generateRepairOrders,
+  generateVisitorRecords
 } from './mockData'
 
 const today = dayjs('2026-06-17')
@@ -28,6 +33,10 @@ const state = reactive({
   serviceStaff: [...serviceStaff],
   satisfactionLevels: [...satisfactionLevels],
   visitStatusMap: { ...visitStatusMap },
+  visitorRecords: [...visitorRecords],
+  visitorPurposes: [...visitorPurposes],
+  visitorStatusMap: { ...visitorStatusMap },
+  visitorStatusColorMap: { ...visitorStatusColorMap },
   currentDate: today.format('YYYY-MM-DD')
 })
 
@@ -620,6 +629,334 @@ const actions = {
     })
 
     return true
+  },
+
+  // ============ 访客预约相关 ============
+
+  todayVisitorCount: computed(() => {
+    return state.visitorRecords.filter(r => 
+      dayjs(r.visitTime).format('YYYY-MM-DD') === state.currentDate
+    )
+  }),
+
+  todayPendingAudit: computed(() => {
+    return state.visitorRecords.filter(r => 
+      dayjs(r.visitTime).format('YYYY-MM-DD') === state.currentDate && r.status === 'pending'
+    )
+  }),
+
+  todayPendingSign: computed(() => {
+    return state.visitorRecords.filter(r => 
+      dayjs(r.visitTime).format('YYYY-MM-DD') === state.currentDate && 
+      ['approved', 'released'].includes(r.status)
+    )
+  }),
+
+  todayLeftCount: computed(() => {
+    return state.visitorRecords.filter(r => 
+      dayjs(r.visitTime).format('YYYY-MM-DD') === state.currentDate && r.status === 'left'
+    )
+  }),
+
+  last7DaysVisitors: computed(() => {
+    const days = []
+    for (let i = 6; i >= 0; i--) {
+      const date = today.subtract(i, 'day').format('YYYY-MM-DD')
+      const count = state.visitorRecords.filter(r => 
+        dayjs(r.visitTime).format('YYYY-MM-DD') === date
+      ).length
+      const leftCount = state.visitorRecords.filter(r => 
+        dayjs(r.visitTime).format('YYYY-MM-DD') === date && r.status === 'left'
+      ).length
+      days.push({ date, count, leftCount })
+    }
+    return days
+  }),
+
+  visitorBuildingDistribution: computed(() => {
+    const buildingMap = {}
+    state.visitorRecords.forEach(r => {
+      if (r.buildingId && dayjs(r.visitTime).format('YYYY-MM-DD') >= today.subtract(7, 'day').format('YYYY-MM-DD')) {
+        buildingMap[r.buildingId] = (buildingMap[r.buildingId] || 0) + 1
+      }
+    })
+    return state.buildings.map(building => {
+      return { 
+        name: building.name, 
+        count: buildingMap[building.id] || 0, 
+        id: building.id 
+      }
+    }).sort((a, b) => b.count - a.count)
+  }),
+
+  createVisitorRecord(recordData) {
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    const todayStr = today.format('YYYYMMDD')
+    const todayCount = state.visitorRecords.filter(o => 
+      o.id.startsWith('FK' + todayStr)
+    ).length + 1
+    
+    const newRecord = {
+      id: `FK${todayStr}${String(todayCount).padStart(4, '0')}`,
+      ...recordData,
+      status: 'pending',
+      createTime: now,
+      auditTime: null,
+      auditOperator: null,
+      auditRemark: null,
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      processLogs: [
+        { time: now, operator: recordData.createOperator || '张客服', action: '提交预约', content: `登记访客预约：${recordData.visitorName}` }
+      ],
+      processResult: null
+    }
+    
+    state.visitorRecords.unshift(newRecord)
+    return newRecord
+  },
+
+  auditVisitor(recordId, operator, isApproved, remark) {
+    const record = state.visitorRecords.find(r => r.id === recordId)
+    if (!record || record.status !== 'pending') return false
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    record.auditTime = now
+    record.auditOperator = operator
+    record.auditRemark = remark || ''
+    
+    if (isApproved) {
+      record.status = 'approved'
+      record.processLogs.push({
+        time: now,
+        operator: operator,
+        action: '审核通过',
+        content: remark || '信息无误，审核通过'
+      })
+    } else {
+      record.status = 'rejected'
+      record.processLogs.push({
+        time: now,
+        operator: operator,
+        action: '审核拒绝',
+        content: remark || '审核未通过'
+      })
+    }
+    
+    return true
+  },
+
+  releaseVisitor(recordId, operator, gate, operatorRole) {
+    const record = state.visitorRecords.find(r => r.id === recordId)
+    if (!record) return { success: false, message: '未找到该预约记录' }
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    const visitTime = dayjs(record.visitTime)
+    const nowTime = dayjs(now)
+    
+    if (!record.visitorPhone || record.visitorPhone.length < 11) {
+      return { success: false, message: '访客手机号信息不完整，无法放行，请先补充信息' }
+    }
+    if (!record.roomNumber) {
+      return { success: false, message: '拜访房号信息不完整，无法放行，请先补充信息' }
+    }
+    if (record.status === 'rejected') {
+      return { success: false, message: '该预约已被审核拒绝，无法放行' }
+    }
+    if (record.status === 'cancelled') {
+      return { success: false, message: '该预约已被取消，无法放行' }
+    }
+    if (record.status !== 'approved' && record.status !== 'released' && record.status !== 'signed') {
+      if (record.status === 'pending') {
+        return { success: false, message: '该预约尚未审核，无法放行，请先审核' }
+      }
+      if (record.status === 'expired') {
+        return { success: false, message: '该预约已过期，无法放行' }
+      }
+    }
+    
+    const expiryTime = visitTime.add(2, 'hour')
+    if (nowTime.isAfter(expiryTime)) {
+      return { success: false, message: `已过预约时段（预约时间${record.visitTime}，超过2小时），无法放行，请重新预约` }
+    }
+
+    record.releaseTime = now
+    record.releaseOperator = operator
+    record.releaseGate = gate
+    record.status = 'released'
+    record.processLogs.push({
+      time: now,
+      operator: operator,
+      action: '放行',
+      content: `从${gate}放行${operatorRole === 'security' ? '（安保操作）' : ''}`
+    })
+    
+    return { success: true }
+  },
+
+  signVisitor(recordId, operator) {
+    const record = state.visitorRecords.find(r => r.id === recordId)
+    if (!record || !['released', 'approved'].includes(record.status)) return false
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    record.signTime = now
+    record.signOperator = operator
+    record.status = 'signed'
+    record.processLogs.push({
+      time: now,
+      operator: operator,
+      action: '签到确认',
+      content: '访客已到达，与业主确认后签到'
+    })
+    
+    return true
+  },
+
+  leaveVisitor(recordId, operator, gate) {
+    const record = state.visitorRecords.find(r => r.id === recordId)
+    if (!record || !['released', 'signed'].includes(record.status)) return false
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    record.leaveTime = now
+    record.leaveOperator = operator
+    record.leaveGate = gate
+    record.status = 'left'
+    record.processLogs.push({
+      time: now,
+      operator: operator,
+      action: '登记离场',
+      content: `从${gate}登记离场，本次来访流程结束`
+    })
+    
+    return true
+  },
+
+  cancelVisitor(recordId, operator, reason) {
+    const record = state.visitorRecords.find(r => r.id === recordId)
+    if (!record || ['left', 'cancelled', 'rejected'].includes(record.status)) return false
+
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    record.status = 'cancelled'
+    record.remark = reason
+    record.processLogs.push({
+      time: now,
+      operator: operator,
+      action: '取消预约',
+      content: reason || '取消预约'
+    })
+    
+    return true
+  },
+
+  updateVisitorRecord(recordId, updateData) {
+    const record = state.visitorRecords.find(r => r.id === recordId)
+    if (!record) return false
+    
+    Object.assign(record, updateData)
+    
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    record.processLogs.push({
+      time: now,
+      operator: updateData.updateOperator || '张客服',
+      action: '修改信息',
+      content: `更新访客预约信息`
+    })
+    
+    return true
+  },
+
+  addVisitorRemark(recordId, remark, operator) {
+    const record = state.visitorRecords.find(r => r.id === recordId)
+    if (!record) return false
+    
+    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    record.remark = record.remark ? record.remark + '；' + remark : remark
+    record.processLogs.push({
+      time: now,
+      operator: operator,
+      action: '补充备注',
+      content: remark
+    })
+    
+    return true
+  },
+
+  getVisitorById(recordId) {
+    return state.visitorRecords.find(r => r.id === recordId)
+  },
+
+  validateVisitorForm(formData) {
+    const errors = {}
+    
+    if (!formData.visitorName || formData.visitorName.trim() === '') {
+      errors.visitorName = '请填写来访人姓名'
+    } else if (formData.visitorName.trim().length < 2) {
+      errors.visitorName = '姓名至少需要2个字符'
+    }
+    
+    if (!formData.visitorPhone || formData.visitorPhone.trim() === '') {
+      errors.visitorPhone = '请填写联系电话'
+    } else if (!/^1[3-9]\d{9}$/.test(formData.visitorPhone.trim())) {
+      errors.visitorPhone = '手机号格式不正确，请输入11位有效手机号（以1开头）'
+    }
+    
+    if (!formData.visitTime || formData.visitTime.trim() === '') {
+      errors.visitTime = '请选择到访时间'
+    } else {
+      const visit = dayjs(formData.visitTime)
+      if (!visit.isValid()) {
+        errors.visitTime = '到访时间格式不正确'
+      }
+    }
+    
+    if (!formData.endTime || formData.endTime.trim() === '') {
+      errors.endTime = '请选择预计离场时间'
+    } else if (formData.visitTime) {
+      const visit = dayjs(formData.visitTime)
+      const end = dayjs(formData.endTime)
+      if (end.isBefore(visit)) {
+        errors.endTime = '离场时间不能早于到访时间'
+      } else if (end.diff(visit, 'hour') > 12) {
+        errors.endTime = '单次来访时长不能超过12小时，如有需要请分次预约'
+      }
+    }
+    
+    if (formData.companionCount === '' || formData.companionCount === null || formData.companionCount === undefined) {
+      errors.companionCount = '请填写同行人数（没有同行人填0）'
+    } else if (isNaN(Number(formData.companionCount)) || Number(formData.companionCount) < 0) {
+      errors.companionCount = '同行人数不能为负数'
+    } else if (Number(formData.companionCount) > 15) {
+      errors.companionCount = '同行人数超过15人，请联系物业特别登记'
+    }
+    
+    if (formData.plateNumber && formData.plateNumber.trim() !== '') {
+      const platePattern = /^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领][A-Z][A-Z0-9]{4,6}$/
+      if (!platePattern.test(formData.plateNumber.trim().toUpperCase())) {
+        errors.plateNumber = '车牌号格式不正确，请输入正确的车牌号'
+      }
+    }
+    
+    if (!formData.roomNumber || formData.roomNumber.trim() === '') {
+      errors.roomNumber = '请填写拜访房号'
+    }
+    
+    if (!formData.hostName || formData.hostName.trim() === '') {
+      errors.hostName = '请填写被访人姓名'
+    }
+    
+    if (!formData.hostPhone || formData.hostPhone.trim() === '') {
+      errors.hostPhone = '请填写被访人联系电话'
+    } else if (!/^1[3-9]\d{9}$/.test(formData.hostPhone.trim())) {
+      errors.hostPhone = '被访人手机号格式不正确'
+    }
+    
+    return errors
   }
 }
 
@@ -631,4 +968,4 @@ export function useStore() {
   }
 }
 
-export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap }
+export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, visitorPurposes, visitorStatusMap, visitorStatusColorMap }

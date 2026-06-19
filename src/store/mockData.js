@@ -71,7 +71,670 @@ const visitStatusMap = {
   closed: '已关闭'
 }
 
+export const visitorPurposes = [
+  { value: 'family', label: '探亲访友' },
+  { value: 'delivery', label: '快递外卖' },
+  { value: 'maintenance', label: '维修服务' },
+  { value: 'housekeeping', label: '家政服务' },
+  { value: 'business', label: '商务洽谈' },
+  { value: 'moving', label: '搬家搬物' },
+  { value: 'interview', label: '面试求职' },
+  { value: 'medical', label: '医疗护理' },
+  { value: 'education', label: '家教培训' },
+  { value: 'other', label: '其他' }
+]
+
+export const visitorStatusMap = {
+  pending: '待审核',
+  approved: '已审核',
+  rejected: '已拒绝',
+  released: '已放行',
+  signed: '已签到',
+  left: '已离场',
+  cancelled: '已取消',
+  expired: '已过期'
+}
+
+export const visitorStatusColorMap = {
+  pending: 'bg-yellow-100 text-yellow-700',
+  approved: 'bg-blue-100 text-blue-700',
+  rejected: 'bg-gray-100 text-gray-700',
+  released: 'bg-purple-100 text-purple-700',
+  signed: 'bg-green-100 text-green-700',
+  left: 'bg-gray-100 text-gray-600',
+  cancelled: 'bg-red-100 text-red-700',
+  expired: 'bg-orange-100 text-orange-700'
+}
+
 const today = dayjs('2026-06-17')
+
+const generateVisitorRecords = () => {
+  const records = []
+  const visitorNames = ['张伟', '李娜', '王芳', '刘洋', '陈静', '杨帆', '赵磊', '黄敏',
+    '周杰', '吴婷', '徐强', '孙丽', '马超', '朱琳', '胡军', '郭燕', '林峰', '何雪']
+  const reasons = ['很久没见面了，回家看看父母', '送双十一网购的包裹，大件较多', '空调售后上门检修', '每周三固定的家政保洁服务',
+    '公司合作项目洽谈', '搬新家，约了搬家公司', '物业招聘面试保安岗位', '社区医院上门做健康检查',
+    '孩子的钢琴老师上门授课', '朋友来家里聚餐', '顺丰快递送文件', '美团外卖送午餐',
+    '家电维修师傅修冰箱', '水管工疏通下水道', '装修公司量房报价', '月嫂上门面试', '亲戚来看望新生儿']
+  const platePrefixes = ['京A', '京B', '京N', '沪C', '粤B', '浙A', '苏E', '津K']
+
+  // 今天的预约 - 各种状态混合
+  const todayRecords = [
+    // 待审核
+    {
+      id: 'FK202606170010',
+      visitorName: '徐强',
+      visitorPhone: '13912345678',
+      purpose: 'family',
+      purposeDetail: '',
+      visitTime: today.format('YYYY-MM-DD') + ' 10:00',
+      endTime: today.format('YYYY-MM-DD') + ' 18:00',
+      companionCount: 2,
+      plateNumber: '京A88888',
+      buildingId: 'B001',
+      roomNumber: '1号楼1单元1501室',
+      hostName: '王女士',
+      hostPhone: '13811112222',
+      status: 'pending',
+      createTime: today.format('YYYY-MM-DD') + ' 08:15:00',
+      createOperator: '王女士（业主APP）',
+      auditTime: null,
+      auditOperator: null,
+      auditRemark: null,
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '带了两个孩子，希望帮忙留意',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 08:15:00', operator: '王女士', action: '提交预约', content: '业主通过APP提交访客预约申请' }
+      ],
+      idCard: '110101********1234'
+    },
+    {
+      id: 'FK202606170011',
+      visitorName: '快递小哥',
+      visitorPhone: '17600001234',
+      purpose: 'delivery',
+      purposeDetail: '京东快递',
+      visitTime: today.format('YYYY-MM-DD') + ' 09:30',
+      endTime: today.format('YYYY-MM-DD') + ' 11:00',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B002',
+      roomNumber: '2号楼2单元2003室',
+      hostName: '李先生',
+      hostPhone: '13922223333',
+      status: 'pending',
+      createTime: today.format('YYYY-MM-DD') + ' 08:50:00',
+      createOperator: '李先生（业主APP）',
+      auditTime: null,
+      auditOperator: null,
+      auditRemark: null,
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 08:50:00', operator: '李先生', action: '提交预约', content: '业主通过APP提交访客预约申请' }
+      ],
+      idCard: ''
+    },
+    {
+      id: 'FK202606170012',
+      visitorName: '周杰',
+      visitorPhone: '13511112222',
+      purpose: 'maintenance',
+      purposeDetail: '海尔空调售后',
+      visitTime: today.format('YYYY-MM-DD') + ' 14:00',
+      endTime: today.format('YYYY-MM-DD') + ' 16:00',
+      companionCount: 1,
+      plateNumber: '京N66666',
+      buildingId: 'B005',
+      roomNumber: '6号楼1单元0803室',
+      hostName: '陈女士',
+      hostPhone: '13555556666',
+      status: 'pending',
+      createTime: today.format('YYYY-MM-DD') + ' 09:00:00',
+      createOperator: '张客服（前台登记）',
+      auditTime: null,
+      auditOperator: null,
+      auditRemark: null,
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '需携带工具包进入',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 09:00:00', operator: '张客服', action: '提交预约', content: '物业前台代业主登记预约' }
+      ],
+      idCard: '310101********5678'
+    },
+    // 已审核 - 待放行
+    {
+      id: 'FK202606170001',
+      visitorName: '张伟',
+      visitorPhone: '13800001111',
+      purpose: 'family',
+      purposeDetail: '',
+      visitTime: today.format('YYYY-MM-DD') + ' 09:00',
+      endTime: today.format('YYYY-MM-DD') + ' 20:00',
+      companionCount: 1,
+      plateNumber: '京A12345',
+      buildingId: 'B001',
+      roomNumber: '1号楼2单元1002室',
+      hostName: '孙女士',
+      hostPhone: '13277778888',
+      status: 'approved',
+      createTime: today.format('YYYY-MM-DD') + ' 07:30:00',
+      createOperator: '孙女士（业主APP）',
+      auditTime: today.format('YYYY-MM-DD') + ' 08:00:00',
+      auditOperator: '张客服',
+      auditRemark: '信息齐全，审核通过',
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 07:30:00', operator: '孙女士', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.format('YYYY-MM-DD') + ' 08:00:00', operator: '张客服', action: '审核通过', content: '信息齐全，审核通过' }
+      ],
+      idCard: '110101********1111'
+    },
+    {
+      id: 'FK202606170002',
+      visitorName: '家政阿姨',
+      visitorPhone: '15000002222',
+      purpose: 'housekeeping',
+      purposeDetail: '深度保洁',
+      visitTime: today.format('YYYY-MM-DD') + ' 08:30',
+      endTime: today.format('YYYY-MM-DD') + ' 14:00',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B006',
+      roomNumber: '8号楼2单元0301室',
+      hostName: '刘先生',
+      hostPhone: '13366667777',
+      status: 'approved',
+      createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 20:00:00',
+      createOperator: '刘先生（业主APP）',
+      auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 20:30:00',
+      auditOperator: '李客服',
+      auditRemark: '审核通过',
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '每周固定钟点工',
+      processLogs: [
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 20:00:00', operator: '刘先生', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 20:30:00', operator: '李客服', action: '审核通过', content: '审核通过' }
+      ],
+      idCard: '420101********3333'
+    },
+    {
+      id: 'FK202606170003',
+      visitorName: '王芳',
+      visitorPhone: '13688889999',
+      purpose: 'education',
+      purposeDetail: '钢琴老师',
+      visitTime: today.format('YYYY-MM-DD') + ' 15:00',
+      endTime: today.format('YYYY-MM-DD') + ' 16:30',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B003',
+      roomNumber: '3号楼1单元0502室',
+      hostName: '张阿姨',
+      hostPhone: '13633334444',
+      status: 'approved',
+      createTime: today.format('YYYY-MM-DD') + ' 08:20:00',
+      createOperator: '张阿姨（业主APP）',
+      auditTime: today.format('YYYY-MM-DD') + ' 08:45:00',
+      auditOperator: '王客服',
+      auditRemark: '',
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 08:20:00', operator: '张阿姨', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.format('YYYY-MM-DD') + ' 08:45:00', operator: '王客服', action: '审核通过', content: '审核通过' }
+      ],
+      idCard: ''
+    },
+    // 已放行
+    {
+      id: 'FK202606170004',
+      visitorName: '李娜',
+      visitorPhone: '13799990000',
+      purpose: 'family',
+      purposeDetail: '',
+      visitTime: today.format('YYYY-MM-DD') + ' 10:30',
+      endTime: today.format('YYYY-MM-DD') + ' 19:00',
+      companionCount: 3,
+      plateNumber: '京B99999',
+      buildingId: 'B004',
+      roomNumber: '5号楼3单元1201室',
+      hostName: '赵先生',
+      hostPhone: '13744445555',
+      status: 'released',
+      createTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 19:00:00',
+      createOperator: '赵先生（业主APP）',
+      auditTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 19:30:00',
+      auditOperator: '李客服',
+      auditRemark: '',
+      releaseTime: today.format('YYYY-MM-DD') + ' 08:10:00',
+      releaseOperator: '安保-陈队长',
+      releaseGate: '东门',
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '',
+      processLogs: [
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 19:00:00', operator: '赵先生', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 19:30:00', operator: '李客服', action: '审核通过', content: '审核通过' },
+        { time: today.format('YYYY-MM-DD') + ' 08:10:00', operator: '安保-陈队长', action: '放行', content: '从东门车辆通道放行，已核实行车证和预约信息' }
+      ],
+      idCard: '110105********4444'
+    },
+    {
+      id: 'FK202606170005',
+      visitorName: '外卖骑手',
+      visitorPhone: '18511112222',
+      purpose: 'delivery',
+      purposeDetail: '美团外卖',
+      visitTime: today.format('YYYY-MM-DD') + ' 12:00',
+      endTime: today.format('YYYY-MM-DD') + ' 12:30',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B002',
+      roomNumber: '2号楼1单元1501室',
+      hostName: '周先生',
+      hostPhone: '13188889999',
+      status: 'released',
+      createTime: today.format('YYYY-MM-DD') + ' 11:30:00',
+      createOperator: '周先生（业主APP）',
+      auditTime: today.format('YYYY-MM-DD') + ' 11:32:00',
+      auditOperator: '系统自动审核',
+      auditRemark: '外卖订单，自动审核通过',
+      releaseTime: today.format('YYYY-MM-DD') + ' 11:55:00',
+      releaseOperator: '安保-小王',
+      releaseGate: '南门',
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 11:30:00', operator: '周先生', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.format('YYYY-MM-DD') + ' 11:32:00', operator: '系统', action: '审核通过', content: '外卖订单，自动审核通过' },
+        { time: today.format('YYYY-MM-DD') + ' 11:55:00', operator: '安保-小王', action: '放行', content: '从南门人行通道放行' }
+      ],
+      idCard: ''
+    },
+    // 已签到（进入楼栋）
+    {
+      id: 'FK202606170006',
+      visitorName: '胡军',
+      visitorPhone: '13622223333',
+      purpose: 'business',
+      purposeDetail: '商业合作洽谈',
+      visitTime: today.format('YYYY-MM-DD') + ' 09:30',
+      endTime: today.format('YYYY-MM-DD') + ' 11:30',
+      companionCount: 0,
+      plateNumber: '京N77777',
+      buildingId: 'B007',
+      roomNumber: '商业楼201室',
+      hostName: '吴店长',
+      hostPhone: '13099998888',
+      status: 'signed',
+      createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 17:00:00',
+      createOperator: '吴店长（业主APP）',
+      auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 17:15:00',
+      auditOperator: '张客服',
+      auditRemark: '',
+      releaseTime: today.format('YYYY-MM-DD') + ' 08:55:00',
+      releaseOperator: '安保-陈队长',
+      releaseGate: '东门',
+      signTime: today.format('YYYY-MM-DD') + ' 09:05:00',
+      signOperator: '楼栋管家-小赵',
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '与商铺洽谈广告合作事宜',
+      processLogs: [
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 17:00:00', operator: '吴店长', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 17:15:00', operator: '张客服', action: '审核通过', content: '审核通过' },
+        { time: today.format('YYYY-MM-DD') + ' 08:55:00', operator: '安保-陈队长', action: '放行', content: '从东门车辆通道放行' },
+        { time: today.format('YYYY-MM-DD') + ' 09:05:00', operator: '楼栋管家-小赵', action: '签到确认', content: '访客已到达商业楼，与吴店长确认后签到' }
+      ],
+      idCard: '320101********5555'
+    },
+    // 已完成流程 - 已离场
+    {
+      id: 'FK202606170007',
+      visitorName: '郭燕',
+      visitorPhone: '13566667777',
+      purpose: 'medical',
+      purposeDetail: '社区医院护士',
+      visitTime: today.format('YYYY-MM-DD') + ' 08:00',
+      endTime: today.format('YYYY-MM-DD') + ' 09:00',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B006',
+      roomNumber: '8号楼1单元0202室',
+      hostName: '刘奶奶',
+      hostPhone: '18900001111',
+      status: 'left',
+      createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:00:00',
+      createOperator: '张客服（前台登记）',
+      auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:10:00',
+      auditOperator: '王客服',
+      auditRemark: '',
+      releaseTime: today.format('YYYY-MM-DD') + ' 07:50:00',
+      releaseOperator: '安保-小王',
+      releaseGate: '北门',
+      signTime: today.format('YYYY-MM-DD') + ' 08:05:00',
+      signOperator: '楼栋管家-小钱',
+      leaveTime: today.format('YYYY-MM-DD') + ' 09:12:00',
+      leaveOperator: '安保-小王',
+      leaveGate: '北门',
+      remark: '每周三上门给老人测血压血糖',
+      processLogs: [
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:00:00', operator: '张客服', action: '提交预约', content: '前台代业主登记，社区医院护士每周三上门' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:10:00', operator: '王客服', action: '审核通过', content: '审核通过' },
+        { time: today.format('YYYY-MM-DD') + ' 07:50:00', operator: '安保-小王', action: '放行', content: '从北门人行通道放行' },
+        { time: today.format('YYYY-MM-DD') + ' 08:05:00', operator: '楼栋管家-小钱', action: '签到确认', content: '护士已到达业主家' },
+        { time: today.format('YYYY-MM-DD') + ' 09:12:00', operator: '安保-小王', action: '登记离场', content: '从北门离场' }
+      ],
+      idCard: ''
+    },
+    {
+      id: 'FK202606170008',
+      visitorName: '黄敏',
+      visitorPhone: '13733334444',
+      purpose: 'housekeeping',
+      purposeDetail: '',
+      visitTime: today.format('YYYY-MM-DD') + ' 07:30',
+      endTime: today.format('YYYY-MM-DD') + ' 12:00',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B001',
+      roomNumber: '1号楼1单元2001室',
+      hostName: '王先生',
+      hostPhone: '13600009999',
+      status: 'left',
+      createTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 21:00:00',
+      createOperator: '王先生（业主APP）',
+      auditTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 21:05:00',
+      auditOperator: '系统自动审核',
+      auditRemark: '固定钟点工，自动审核',
+      releaseTime: today.format('YYYY-MM-DD') + ' 07:20:00',
+      releaseOperator: '安保-老周',
+      releaseGate: '东门',
+      signTime: today.format('YYYY-MM-DD') + ' 07:35:00',
+      signOperator: '楼栋管家-小孙',
+      leaveTime: today.format('YYYY-MM-DD') + ' 12:20:00',
+      leaveOperator: '安保-老周',
+      leaveGate: '东门',
+      remark: '',
+      processLogs: [
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 21:00:00', operator: '王先生', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 21:05:00', operator: '系统', action: '审核通过', content: '固定钟点工，自动审核通过' },
+        { time: today.format('YYYY-MM-DD') + ' 07:20:00', operator: '安保-老周', action: '放行', content: '从东门人行通道放行' },
+        { time: today.format('YYYY-MM-DD') + ' 07:35:00', operator: '楼栋管家-小孙', action: '签到确认', content: '业主确认访客到达' },
+        { time: today.format('YYYY-MM-DD') + ' 12:20:00', operator: '安保-老周', action: '登记离场', content: '从东门离场，保洁工作完成' }
+      ],
+      idCard: '510101********6666'
+    },
+    {
+      id: 'FK202606170009',
+      visitorName: '杨帆',
+      visitorPhone: '13844445555',
+      purpose: 'family',
+      purposeDetail: '',
+      visitTime: today.format('YYYY-MM-DD') + ' 08:30',
+      endTime: today.format('YYYY-MM-DD') + ' 10:00',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B004',
+      roomNumber: '5号楼2单元0802室',
+      hostName: '赵先生',
+      hostPhone: '13744445555',
+      status: 'left',
+      createTime: today.format('YYYY-MM-DD') + ' 08:00:00',
+      createOperator: '赵先生（业主APP）',
+      auditTime: today.format('YYYY-MM-DD') + ' 08:02:00',
+      auditOperator: '张客服',
+      auditRemark: '',
+      releaseTime: today.format('YYYY-MM-DD') + ' 08:25:00',
+      releaseOperator: '安保-陈队长',
+      releaseGate: '北门',
+      signTime: today.format('YYYY-MM-DD') + ' 08:40:00',
+      signOperator: '楼栋管家-小李',
+      leaveTime: today.format('YYYY-MM-DD') + ' 10:05:00',
+      leaveOperator: '安保-小王',
+      leaveGate: '北门',
+      remark: '顺路来看看',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 08:00:00', operator: '赵先生', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.format('YYYY-MM-DD') + ' 08:02:00', operator: '张客服', action: '审核通过', content: '审核通过' },
+        { time: today.format('YYYY-MM-DD') + ' 08:25:00', operator: '安保-陈队长', action: '放行', content: '从北门放行' },
+        { time: today.format('YYYY-MM-DD') + ' 08:40:00', operator: '楼栋管家-小李', action: '签到确认', content: '访客已到达' },
+        { time: today.format('YYYY-MM-DD') + ' 10:05:00', operator: '安保-小王', action: '登记离场', content: '从北门离场' }
+      ],
+      idCard: ''
+    },
+    // 已拒绝
+    {
+      id: 'FK202606170013',
+      visitorName: '未知人员',
+      visitorPhone: '10086',
+      purpose: 'other',
+      purposeDetail: '',
+      visitTime: today.format('YYYY-MM-DD') + ' 09:00',
+      endTime: today.format('YYYY-MM-DD') + ' 18:00',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B003',
+      roomNumber: '3号楼2单元1203室',
+      hostName: '查无此人',
+      hostPhone: '13800000000',
+      status: 'rejected',
+      createTime: today.format('YYYY-MM-DD') + ' 08:30:00',
+      createOperator: '未知',
+      auditTime: today.format('YYYY-MM-DD') + ' 08:35:00',
+      auditOperator: '张客服',
+      auditRemark: '电话联系业主核实，该业主表示未预约任何访客，房号与业主信息不匹配',
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 08:30:00', operator: '未知', action: '提交预约', content: '通过访客端提交预约' },
+        { time: today.format('YYYY-MM-DD') + ' 08:35:00', operator: '张客服', action: '审核拒绝', content: '电话联系业主核实，该业主表示未预约任何访客，房号与业主信息不匹配，拒绝通过' }
+      ],
+      idCard: ''
+    },
+    // 已取消
+    {
+      id: 'FK202606170014',
+      visitorName: '刘洋',
+      visitorPhone: '13155556666',
+      purpose: 'moving',
+      purposeDetail: '',
+      visitTime: today.format('YYYY-MM-DD') + ' 10:00',
+      endTime: today.format('YYYY-MM-DD') + ' 16:00',
+      companionCount: 3,
+      plateNumber: '京A55555',
+      buildingId: 'B004',
+      roomNumber: '5号楼1单元2201室',
+      hostName: '孙先生',
+      hostPhone: '13812123434',
+      status: 'cancelled',
+      createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+      createOperator: '孙先生（业主APP）',
+      auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:10:00',
+      auditOperator: '李客服',
+      auditRemark: '',
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      remark: '业主取消，搬家改期',
+      processLogs: [
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '孙先生', action: '提交预约', content: '业主通过APP提交访客预约申请' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:10:00', operator: '李客服', action: '审核通过', content: '审核通过' },
+        { time: today.format('YYYY-MM-DD') + ' 07:00:00', operator: '孙先生', action: '取消预约', content: '业主通过APP取消预约，搬家改期至下周' }
+      ],
+      idCard: ''
+    }
+  ]
+
+  records.push(...todayRecords)
+
+  // 过去几天的记录，用于图表展示
+  for (let dayOffset = 1; dayOffset <= 6; dayOffset++) {
+    const day = today.subtract(dayOffset, 'day')
+    const dayStr = day.format('YYYY-MM-DD')
+    const recordsForDay = 6 + Math.floor(Math.random() * 8)
+    
+    for (let i = 0; i < recordsForDay; i++) {
+      const buildingIdx = Math.floor(Math.random() * 6)
+      const purposeIdx = Math.floor(Math.random() * visitorPurposes.length)
+      const visitorIdx = Math.floor(Math.random() * visitorNames.length)
+      const reasonIdx = Math.floor(Math.random() * reasons.length)
+      const statusRoll = Math.random()
+      const status = statusRoll < 0.7 ? 'left' : (statusRoll < 0.85 ? 'cancelled' : 'expired')
+      const hour = 8 + Math.floor(Math.random() * 12)
+      const minute = Math.floor(Math.random() * 60)
+      const visitHour = hour
+      const endHour = Math.min(22, visitHour + 1 + Math.floor(Math.random() * 4))
+      const companionCount = Math.floor(Math.random() * 5)
+      const hasPlate = Math.random() > 0.5
+      
+      const id = `FK${dayStr.replace(/-/g, '')}${String(i + 1).padStart(4, '0')}`
+      
+      records.push({
+        id: id,
+        visitorName: visitorNames[visitorIdx],
+        visitorPhone: `13${Math.floor(Math.random() * 9)}${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
+        purpose: visitorPurposes[purposeIdx].value,
+        purposeDetail: purposeIdx >= visitorPurposes.length - 2 ? reasons[reasonIdx].slice(0, 15) : '',
+        visitTime: `${dayStr} ${String(visitHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+        endTime: `${dayStr} ${String(endHour).padStart(2, '0')}:00`,
+        companionCount: companionCount,
+        plateNumber: hasPlate ? `${platePrefixes[Math.floor(Math.random() * platePrefixes.length)]}${String(Math.floor(Math.random() * 90000) + 10000)}` : '',
+        buildingId: buildings[buildingIdx].id,
+        roomNumber: `${buildings[buildingIdx].name}${Math.floor(Math.random() * 2) + 1}单元${String(Math.floor(Math.random() * (buildings[buildingIdx].floors - 1)) + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 4) + 1).padStart(2, '0')}室`,
+        hostName: ['王先生', '李女士', '张先生', '刘阿姨', '陈先生', '赵女士'][Math.floor(Math.random() * 6)],
+        hostPhone: `13${Math.floor(Math.random() * 9)}${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
+        status: status,
+        createTime: `${dayStr} ${String(Math.max(0, visitHour - 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`,
+        createOperator: ['业主APP', '张客服（前台）', '李客服（前台）', '王客服（前台）'][Math.floor(Math.random() * 4)],
+        auditTime: status !== 'expired' ? `${dayStr} ${String(Math.max(0, visitHour - 1)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
+        auditOperator: status !== 'expired' ? ['张客服', '李客服', '王客服', '系统自动'][Math.floor(Math.random() * 4)] : null,
+        auditRemark: '',
+        releaseTime: status === 'left' ? `${dayStr} ${String(visitHour).padStart(2, '0')}:${String(Math.min(59, minute + Math.floor(Math.random() * 20))).padStart(2, '0')}:00` : null,
+        releaseOperator: status === 'left' ? ['安保-陈队长', '安保-小王', '安保-老周'][Math.floor(Math.random() * 3)] : null,
+        releaseGate: status === 'left' ? ['东门', '南门', '西门', '北门'][Math.floor(Math.random() * 4)] : null,
+        signTime: status === 'left' ? `${dayStr} ${String(Math.min(23, visitHour + 1)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
+        signOperator: status === 'left' ? ['楼栋管家-小孙', '楼栋管家-小李', '楼栋管家-小赵', '楼栋管家-小钱'][Math.floor(Math.random() * 4)] : null,
+        leaveTime: status === 'left' ? `${dayStr} ${String(Math.min(23, endHour)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
+        leaveOperator: status === 'left' ? ['安保-陈队长', '安保-小王', '安保-老周'][Math.floor(Math.random() * 3)] : null,
+        leaveGate: status === 'left' ? ['东门', '南门', '西门', '北门'][Math.floor(Math.random() * 4)] : null,
+        remark: '',
+        processLogs: [
+          { time: `${dayStr} ${String(Math.max(0, visitHour - 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`, operator: '业主', action: '提交预约', content: reasons[reasonIdx] }
+        ],
+        idCard: Math.random() > 0.5 ? `${110101 + Math.floor(Math.random() * 500000)}********${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}` : ''
+      })
+
+      if (status !== 'expired') {
+        records[records.length - 1].processLogs.push({
+          time: records[records.length - 1].auditTime,
+          operator: records[records.length - 1].auditOperator,
+          action: '审核通过',
+          content: '信息无误，审核通过'
+        })
+      }
+      if (status === 'left') {
+        records[records.length - 1].processLogs.push({
+          time: records[records.length - 1].releaseTime,
+          operator: records[records.length - 1].releaseOperator,
+          action: '放行',
+          content: `从${records[records.length - 1].releaseGate}放行`
+        })
+        records[records.length - 1].processLogs.push({
+          time: records[records.length - 1].signTime,
+          operator: records[records.length - 1].signOperator,
+          action: '签到确认',
+          content: '访客已到达'
+        })
+        records[records.length - 1].processLogs.push({
+          time: records[records.length - 1].leaveTime,
+          operator: records[records.length - 1].leaveOperator,
+          action: '登记离场',
+          content: `从${records[records.length - 1].leaveGate}离场`
+        })
+      }
+      if (status === 'cancelled') {
+        records[records.length - 1].processLogs.push({
+          time: `${dayStr} ${String(Math.min(23, visitHour - 1)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`,
+          operator: '业主',
+          action: '取消预约',
+          content: '业主临时有事，取消预约'
+        })
+      }
+    }
+  }
+
+  // 按创建时间倒序
+  records.sort((a, b) => b.createTime.localeCompare(a.createTime))
+
+  return records
+}
+
+export const visitorRecords = generateVisitorRecords()
 
 const generateRepairOrders = () => {
   const orders = []
@@ -761,4 +1424,4 @@ const generateInspectionTasks = () => {
 
 export const inspectionRecords = generateInspectionTasks()
 
-export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, generateRepairOrders }
+export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, generateRepairOrders, generateVisitorRecords }

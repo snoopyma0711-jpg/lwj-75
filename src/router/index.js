@@ -45,6 +45,21 @@ const routes = [
     path: '/ledger/equipment',
     name: 'EquipmentLedger',
     component: () => import('../views/ledger/EquipmentLedger.vue')
+  },
+  {
+    path: '/visitor',
+    name: 'VisitorList',
+    component: () => import('../views/visitor/VisitorList.vue')
+  },
+  {
+    path: '/visitor/create',
+    name: 'VisitorCreate',
+    component: () => import('../views/visitor/VisitorCreate.vue')
+  },
+  {
+    path: '/visitor/:id',
+    name: 'VisitorDetail',
+    component: () => import('../views/visitor/VisitorDetail.vue')
   }
 ]
 
