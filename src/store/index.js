@@ -20,6 +20,8 @@ import {
 } from './mockData'
 
 const today = dayjs('2026-06-17')
+const nowTime = dayjs('2026-06-17 10:30:00')
+const nowStr = nowTime.format('YYYY-MM-DD HH:mm:ss')
 
 const state = reactive({
   repairOrders: generateRepairOrders(),
@@ -648,7 +650,7 @@ const actions = {
   todayPendingSign: computed(() => {
     return state.visitorRecords.filter(r => 
       dayjs(r.visitTime).format('YYYY-MM-DD') === state.currentDate && 
-      ['approved', 'released'].includes(r.status)
+      r.status === 'released'
     )
   }),
 
@@ -690,7 +692,6 @@ const actions = {
   }),
 
   createVisitorRecord(recordData) {
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     const todayStr = today.format('YYYYMMDD')
     const todayCount = state.visitorRecords.filter(o => 
       o.id.startsWith('FK' + todayStr)
@@ -700,7 +701,7 @@ const actions = {
       id: `FK${todayStr}${String(todayCount).padStart(4, '0')}`,
       ...recordData,
       status: 'pending',
-      createTime: now,
+      createTime: nowStr,
       auditTime: null,
       auditOperator: null,
       auditRemark: null,
@@ -713,7 +714,7 @@ const actions = {
       leaveOperator: null,
       leaveGate: null,
       processLogs: [
-        { time: now, operator: recordData.createOperator || '张客服', action: '提交预约', content: `登记访客预约：${recordData.visitorName}` }
+        { time: nowStr, operator: recordData.createOperator || '张客服', action: '提交预约', content: `登记访客预约：${recordData.visitorName}` }
       ],
       processResult: null
     }
@@ -726,15 +727,14 @@ const actions = {
     const record = state.visitorRecords.find(r => r.id === recordId)
     if (!record || record.status !== 'pending') return false
 
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-    record.auditTime = now
+    record.auditTime = nowStr
     record.auditOperator = operator
     record.auditRemark = remark || ''
     
     if (isApproved) {
       record.status = 'approved'
       record.processLogs.push({
-        time: now,
+        time: nowStr,
         operator: operator,
         action: '审核通过',
         content: remark || '信息无误，审核通过'
@@ -742,7 +742,7 @@ const actions = {
     } else {
       record.status = 'rejected'
       record.processLogs.push({
-        time: now,
+        time: nowStr,
         operator: operator,
         action: '审核拒绝',
         content: remark || '审核未通过'
@@ -756,9 +756,7 @@ const actions = {
     const record = state.visitorRecords.find(r => r.id === recordId)
     if (!record) return { success: false, message: '未找到该预约记录' }
 
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     const visitTime = dayjs(record.visitTime)
-    const nowTime = dayjs(now)
     
     if (!record.visitorPhone || record.visitorPhone.length < 11) {
       return { success: false, message: '访客手机号信息不完整，无法放行，请先补充信息' }
@@ -772,26 +770,36 @@ const actions = {
     if (record.status === 'cancelled') {
       return { success: false, message: '该预约已被取消，无法放行' }
     }
-    if (record.status !== 'approved' && record.status !== 'released' && record.status !== 'signed') {
-      if (record.status === 'pending') {
-        return { success: false, message: '该预约尚未审核，无法放行，请先审核' }
-      }
-      if (record.status === 'expired') {
-        return { success: false, message: '该预约已过期，无法放行' }
-      }
+    if (record.status === 'expired') {
+      return { success: false, message: '该预约已过期，无法放行' }
+    }
+    if (record.status === 'left') {
+      return { success: false, message: '该访客已登记离场，无需重复放行' }
+    }
+    if (record.status === 'signed') {
+      return { success: false, message: '该访客已签到，无需重复放行' }
+    }
+    if (record.status === 'released') {
+      return { success: false, message: '该访客已放行，无需重复放行' }
+    }
+    if (record.status === 'pending') {
+      return { success: false, message: '该预约尚未审核，无法放行，请先审核通过' }
+    }
+    if (record.status !== 'approved') {
+      return { success: false, message: `当前状态为"${visitorStatusMap[record.status]}"，不允许放行` }
     }
     
-    const expiryTime = visitTime.add(2, 'hour')
+    const expiryTime = visitTime.add(4, 'hour')
     if (nowTime.isAfter(expiryTime)) {
-      return { success: false, message: `已过预约时段（预约时间${record.visitTime}，超过2小时），无法放行，请重新预约` }
+      return { success: false, message: `已过预约时段（预约时间${record.visitTime}，超过4小时），无法放行，请重新预约` }
     }
 
-    record.releaseTime = now
+    record.releaseTime = nowStr
     record.releaseOperator = operator
     record.releaseGate = gate
     record.status = 'released'
     record.processLogs.push({
-      time: now,
+      time: nowStr,
       operator: operator,
       action: '放行',
       content: `从${gate}放行${operatorRole === 'security' ? '（安保操作）' : ''}`
@@ -802,50 +810,97 @@ const actions = {
 
   signVisitor(recordId, operator) {
     const record = state.visitorRecords.find(r => r.id === recordId)
-    if (!record || !['released', 'approved'].includes(record.status)) return false
+    if (!record) return { success: false, message: '未找到该预约记录' }
 
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-    record.signTime = now
+    if (record.status === 'pending') {
+      return { success: false, message: '该预约尚未审核，无法签到' }
+    }
+    if (record.status === 'approved') {
+      return { success: false, message: '该预约尚未放行，请先在门岗放行后再签到' }
+    }
+    if (record.status === 'rejected') {
+      return { success: false, message: '该预约已被审核拒绝，无法签到' }
+    }
+    if (record.status === 'cancelled') {
+      return { success: false, message: '该预约已被取消，无法签到' }
+    }
+    if (record.status === 'expired') {
+      return { success: false, message: '该预约已过期，无法签到' }
+    }
+    if (record.status === 'signed') {
+      return { success: false, message: '该访客已签到，无需重复签到' }
+    }
+    if (record.status === 'left') {
+      return { success: false, message: '该访客已登记离场，无需签到' }
+    }
+    if (record.status !== 'released') {
+      return { success: false, message: `当前状态为"${visitorStatusMap[record.status]}"，不允许签到` }
+    }
+
+    record.signTime = nowStr
     record.signOperator = operator
     record.status = 'signed'
     record.processLogs.push({
-      time: now,
+      time: nowStr,
       operator: operator,
       action: '签到确认',
       content: '访客已到达，与业主确认后签到'
     })
     
-    return true
+    return { success: true }
   },
 
   leaveVisitor(recordId, operator, gate) {
     const record = state.visitorRecords.find(r => r.id === recordId)
-    if (!record || !['released', 'signed'].includes(record.status)) return false
+    if (!record) return { success: false, message: '未找到该预约记录' }
 
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
-    record.leaveTime = now
+    if (record.status === 'pending') {
+      return { success: false, message: '该预约尚未审核，无法登记离场' }
+    }
+    if (record.status === 'approved') {
+      return { success: false, message: '该预约尚未放行，无法登记离场' }
+    }
+    if (record.status === 'released') {
+      return { success: false, message: '该访客尚未签到，请先完成楼栋签到后再登记离场' }
+    }
+    if (record.status === 'rejected') {
+      return { success: false, message: '该预约已被审核拒绝，无需登记离场' }
+    }
+    if (record.status === 'cancelled') {
+      return { success: false, message: '该预约已被取消，无需登记离场' }
+    }
+    if (record.status === 'expired') {
+      return { success: false, message: '该预约已过期，无需登记离场' }
+    }
+    if (record.status === 'left') {
+      return { success: false, message: '该访客已登记离场，无需重复操作' }
+    }
+    if (record.status !== 'signed') {
+      return { success: false, message: `当前状态为"${visitorStatusMap[record.status]}"，不允许登记离场` }
+    }
+
+    record.leaveTime = nowStr
     record.leaveOperator = operator
     record.leaveGate = gate
     record.status = 'left'
     record.processLogs.push({
-      time: now,
+      time: nowStr,
       operator: operator,
       action: '登记离场',
       content: `从${gate}登记离场，本次来访流程结束`
     })
     
-    return true
+    return { success: true }
   },
 
   cancelVisitor(recordId, operator, reason) {
     const record = state.visitorRecords.find(r => r.id === recordId)
     if (!record || ['left', 'cancelled', 'rejected'].includes(record.status)) return false
 
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     record.status = 'cancelled'
     record.remark = reason
     record.processLogs.push({
-      time: now,
+      time: nowStr,
       operator: operator,
       action: '取消预约',
       content: reason || '取消预约'
@@ -860,9 +915,8 @@ const actions = {
     
     Object.assign(record, updateData)
     
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     record.processLogs.push({
-      time: now,
+      time: nowStr,
       operator: updateData.updateOperator || '张客服',
       action: '修改信息',
       content: `更新访客预约信息`
@@ -875,10 +929,9 @@ const actions = {
     const record = state.visitorRecords.find(r => r.id === recordId)
     if (!record) return false
     
-    const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
     record.remark = record.remark ? record.remark + '；' + remark : remark
     record.processLogs.push({
-      time: now,
+      time: nowStr,
       operator: operator,
       action: '补充备注',
       content: remark

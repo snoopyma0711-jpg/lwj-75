@@ -509,15 +509,15 @@ const canAudit = computed(() => {
 })
 
 const canRelease = computed(() => {
-  return ['approved', 'released'].includes(record.value?.status) && ['security', 'service'].includes(currentRole.value)
+  return record.value?.status === 'approved' && ['security', 'service'].includes(currentRole.value)
 })
 
 const canSign = computed(() => {
-  return ['released', 'approved'].includes(record.value?.status) && ['housekeeper', 'service'].includes(currentRole.value)
+  return record.value?.status === 'released' && ['housekeeper', 'service'].includes(currentRole.value)
 })
 
 const canLeave = computed(() => {
-  return ['released', 'signed'].includes(record.value?.status) && ['security', 'service'].includes(currentRole.value)
+  return record.value?.status === 'signed' && ['security', 'service'].includes(currentRole.value)
 })
 
 const canEdit = computed(() => {

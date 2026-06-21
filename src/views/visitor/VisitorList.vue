@@ -553,15 +553,15 @@ const canAudit = (record) => {
 }
 
 const canRelease = (record) => {
-  return ['approved', 'released'].includes(record.status) && ['security', 'service'].includes(currentRole.value)
+  return record.status === 'approved' && ['security', 'service'].includes(currentRole.value)
 }
 
 const canSign = (record) => {
-  return ['released', 'approved'].includes(record.status) && ['housekeeper', 'service'].includes(currentRole.value)
+  return record.status === 'released' && ['housekeeper', 'service'].includes(currentRole.value)
 }
 
 const canLeave = (record) => {
-  return ['released', 'signed'].includes(record.status) && ['security', 'service'].includes(currentRole.value)
+  return record.status === 'signed' && ['security', 'service'].includes(currentRole.value)
 }
 
 const canEdit = (record) => {
@@ -588,8 +588,7 @@ const quickFilter = (type) => {
   if (type === 'pending') {
     filters.status = 'pending'
   } else if (type === 'sign') {
-    filters.status = ''
-    // 已审核或已放行的算待签到
+    filters.status = 'released'
   } else if (type === 'left') {
     filters.status = 'left'
   }
