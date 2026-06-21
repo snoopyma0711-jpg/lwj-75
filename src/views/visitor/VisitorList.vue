@@ -197,6 +197,13 @@
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4 pt-4 border-t">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">异常状态</label>
+          <select v-model="filters.abnormal" class="select text-sm">
+            <option value="">全部</option>
+            <option value="1">异常预约</option>
+          </select>
+        </div>
         <div class="md:col-span-2 lg:col-span-3">
           <label class="block text-sm font-medium text-gray-600 mb-1">关键词搜索</label>
           <div class="relative">
@@ -539,7 +546,8 @@ const filters = reactive({
   dateRange: 'all',
   startDate: '',
   endDate: '',
-  keyword: ''
+  keyword: '',
+  abnormal: ''
 })
 
 const showAuditModal = ref(false)
@@ -692,6 +700,17 @@ const filteredRecords = computed(() => {
       if (!match) return false
     }
 
+    if (filters.abnormal === '1') {
+      const isBlacklistVisitor = store.state.blacklistRecords.some(bl =>
+        bl.status === 'active' &&
+        (bl.visitorPhone === record.visitorPhone ||
+          (bl.idCard && bl.idCard === record.idCard))
+      )
+      const hasTemporaryRelease = record.temporaryReleaseId !== undefined && record.temporaryReleaseId !== null
+      const isRejected = record.status === 'rejected'
+      if (!isBlacklistVisitor && !hasTemporaryRelease && !isRejected) return false
+    }
+
     return true
   })
 })
@@ -744,6 +763,10 @@ const quickFilter = (type) => {
     filters.status = 'released'
   } else if (type === 'left') {
     filters.status = 'left'
+  } else if (type === 'abnormal') {
+    filters.abnormal = '1'
+    filters.startDate = today
+    filters.endDate = today
   }
 }
 
@@ -755,6 +778,7 @@ const resetFilters = () => {
   filters.startDate = ''
   filters.endDate = ''
   filters.keyword = ''
+  filters.abnormal = ''
   showToast('筛选条件已重置', 'success')
 }
 
@@ -904,6 +928,16 @@ const todayPurposeStats = computed(() => {
 })
 
 onMounted(() => {
+  if (route.query.status) {
+    filters.status = route.query.status
+  }
+  if (route.query.abnormal === '1') {
+    const today = dayjs('2026-06-17').format('YYYY-MM-DD')
+    filters.abnormal = '1'
+    filters.startDate = today
+    filters.endDate = today
+  }
+
   if (trendChartRef.value) {
     new Chart(trendChartRef.value, {
       type: 'line',

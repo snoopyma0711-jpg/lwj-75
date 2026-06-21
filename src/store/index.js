@@ -198,6 +198,24 @@ const getters = {
     }).length
   }),
 
+  todayAbnormalVisitorCount: computed(() => {
+    return state.visitorRecords.filter(r => {
+      if (dayjs(r.createTime).format('YYYY-MM-DD') !== state.currentDate) return false
+      
+      const isBlacklistVisitor = state.blacklistRecords.some(bl => 
+        bl.status === 'active' && 
+        (bl.visitorPhone === r.visitorPhone || 
+         (bl.idCard && bl.idCard === r.idCard))
+      )
+      
+      const hasTemporaryRelease = r.temporaryReleaseId !== undefined && r.temporaryReleaseId !== null
+      
+      const isRejected = r.status === 'rejected'
+      
+      return isBlacklistVisitor || hasTemporaryRelease || isRejected
+    }).length
+  }),
+
   getBlacklistByPhone: (phone) => {
     return state.blacklistRecords.find(r => r.visitorPhone === phone && r.status === 'active')
   },

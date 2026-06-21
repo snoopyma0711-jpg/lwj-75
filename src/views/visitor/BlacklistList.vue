@@ -112,7 +112,15 @@
           <label class="block text-sm font-medium text-gray-600 mb-1">结束日期</label>
           <input v-model="filters.endDate" type="date" class="input text-sm" />
         </div>
-        <div class="md:col-span-3 lg:col-span-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">是否临时放开</label>
+          <select v-model="filters.hasTemporaryRelease" class="select text-sm">
+            <option value="">全部</option>
+            <option value="1">有临时放行</option>
+            <option value="0">无临时放行</option>
+          </select>
+        </div>
+        <div class="md:col-span-3 lg:col-span-1">
           <label class="block text-sm font-medium text-gray-600 mb-1">关键词搜索</label>
           <div class="relative">
             <input
@@ -139,6 +147,7 @@
               <th>列入原因</th>
               <th>投诉次数</th>
               <th>状态</th>
+              <th>临时放行</th>
               <th>列入时间</th>
               <th>操作人</th>
               <th>操作</th>
@@ -170,6 +179,17 @@
                 <div v-if="record.status === 'removed' && record.removeTime" class="text-xs text-gray-400 mt-1">
                   {{ record.removeTime }}
                 </div>
+              </td>
+              <td>
+                <template v-if="record.releaseRecords && record.releaseRecords.length > 0">
+                  <span class="badge bg-yellow-100 text-yellow-700">
+                    共{{ record.releaseRecords.length }}次
+                  </span>
+                  <div v-if="getActiveRelease(record)" class="text-xs text-green-600 mt-1">
+                    有有效期内放行
+                  </div>
+                </template>
+                <span v-else class="text-xs text-gray-400">无</span>
               </td>
               <td>
                 <div class="text-sm">{{ record.createTime }}</div>
@@ -398,7 +418,8 @@ const filters = reactive({
   dateRange: 'all',
   startDate: '',
   endDate: '',
-  keyword: ''
+  keyword: '',
+  hasTemporaryRelease: ''
 })
 
 const showAddModal = ref(false)
@@ -477,6 +498,12 @@ const filteredRecords = computed(() => {
       if (!match) return false
     }
 
+    if (filters.hasTemporaryRelease !== '') {
+      const hasRelease = record.releaseRecords && record.releaseRecords.length > 0
+      if (filters.hasTemporaryRelease === '1' && !hasRelease) return false
+      if (filters.hasTemporaryRelease === '0' && hasRelease) return false
+    }
+
     return true
   })
 })
@@ -486,6 +513,14 @@ const getReasonLabel = (value) => {
   return r ? r.label : value
 }
 
+const getActiveRelease = (record) => {
+  if (!record.releaseRecords || record.releaseRecords.length === 0) return null
+  const now = dayjs()
+  return record.releaseRecords.find(rel =>
+    !rel.used && dayjs(rel.expireTime).isAfter(now)
+  )
+}
+
 const resetFilters = () => {
   filters.status = ''
   filters.reason = ''
@@ -493,6 +528,7 @@ const resetFilters = () => {
   filters.startDate = ''
   filters.endDate = ''
   filters.keyword = ''
+  filters.hasTemporaryRelease = ''
   showToast('筛选条件已重置', 'success')
 }
 

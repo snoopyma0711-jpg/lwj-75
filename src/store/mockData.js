@@ -555,6 +555,44 @@ const generateVisitorRecords = () => {
       ],
       idCard: ''
     },
+    // 黑名单访客使用临时放行
+    {
+      id: 'FK202606170015',
+      visitorName: '王大强',
+      visitorPhone: '13800001234',
+      purpose: 'family',
+      purposeDetail: '',
+      visitTime: today.format('YYYY-MM-DD') + ' 14:00',
+      endTime: today.format('YYYY-MM-DD') + ' 18:00',
+      companionCount: 0,
+      plateNumber: '',
+      buildingId: 'B003',
+      roomNumber: '3号楼2单元1002室',
+      hostName: '王先生',
+      hostPhone: '13800001111',
+      status: 'approved',
+      createTime: today.format('YYYY-MM-DD') + ' 10:00:00',
+      createOperator: '张客服（前台登记）',
+      auditTime: today.format('YYYY-MM-DD') + ' 10:05:00',
+      auditOperator: '物业经理-刘经理',
+      auditRemark: '已核实为黑名单访客，但有有效的临时放行审批（REL20260617001），情况特殊紧急，准予放行',
+      releaseTime: null,
+      releaseOperator: null,
+      releaseGate: null,
+      signTime: null,
+      signOperator: null,
+      leaveTime: null,
+      leaveOperator: null,
+      leaveGate: null,
+      temporaryReleaseId: 'REL20260617001',
+      remark: '使用临时放行：REL20260617001，审批人：物业经理-刘经理',
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 10:00:00', operator: '张客服', action: '提交预约', content: '访客王大强来前台登记预约，系统检测到黑名单拦截' },
+        { time: today.format('YYYY-MM-DD') + ' 10:02:00', operator: '张客服', action: '查询临时放行', content: '查询到有效的临时放行审批REL20260617001，有效期至今日20:00' },
+        { time: today.format('YYYY-MM-DD') + ' 10:05:00', operator: '物业经理-刘经理', action: '审核通过', content: '确认临时放行有效，访客为业主亲弟弟，老父亲病危急需见面，情况属实，准予放行' }
+      ],
+      idCard: '110101********1234'
+    },
     // 已拒绝
     {
       id: 'FK202606170013',
@@ -1478,13 +1516,15 @@ const generateBlacklistRecords = () => {
         approveTime: '2026-06-17 09:30:00',
         approveReason: '家中老父亲病危，急需见最后一面，情况特殊紧急',
         expireTime: '2026-06-17 20:00:00',
-        used: false,
-        usedRecordId: null
+        used: true,
+        usedRecordId: 'FK202606170015',
+        usedTime: '2026-06-17 10:05:00'
       }
     ],
     processLogs: [
       { time: '2026-06-01 14:30:00', operator: '张客服', action: '列入黑名单', content: '根据3号楼多位业主投诉，该访客多次醉酒闹事，骚扰业主，决定列入黑名单。' },
-      { time: '2026-06-17 09:30:00', operator: '物业经理-刘经理', action: '临时放行审批', content: '家中老父亲病危，急需见最后一面，亲属关系属实，情况特殊紧急，批准本次临时放行，有效期至今日20:00。' }
+      { time: '2026-06-17 09:30:00', operator: '物业经理-刘经理', action: '临时放行审批', content: '家中老父亲病危，急需见最后一面，亲属关系属实，情况特殊紧急，批准本次临时放行，有效期至今日20:00。' },
+      { time: '2026-06-17 10:05:00', operator: '系统', action: '临时放行使用', content: '临时放行REL20260617001已被预约FK202606170015使用' }
     ]
   })
   

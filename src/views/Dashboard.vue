@@ -77,6 +77,21 @@
         </div>
       </div>
 
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow border-2 border-orange-100" @click="goToVisitorWithFilter('abnormal')">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">今日异常预约</p>
+            <p class="text-3xl font-bold text-orange-600 mt-1">{{ todayAbnormalVisitorCount }}</p>
+            <p class="text-xs text-orange-500 mt-1">黑名单/临时放行/被拒</p>
+          </div>
+          <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
       <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow border-2 border-red-100" @click="goToBlacklist">
         <div class="flex items-center justify-between">
           <div>
@@ -243,7 +258,7 @@ const buildingChartRef = ref(null)
 const purposeChartRef = ref(null)
 const currentDate = dayjs('2026-06-17').format('YYYY年MM月DD日')
 
-const { todayVisitorCount, todayPendingAudit, todayPendingSign, todayLeftCount, last7DaysVisitors, visitorBuildingDistribution } = store
+const { todayVisitorCount, todayPendingAudit, todayPendingSign, todayLeftCount, todayAbnormalVisitorCount, last7DaysVisitors, visitorBuildingDistribution } = store
 
 const todayPendingList = computed(() => {
   return store.state.visitorRecords
@@ -284,7 +299,11 @@ const getPendingIconClass = (status) => {
 }
 
 const goToVisitorWithFilter = (type) => {
-  router.push({ path: '/visitor', query: type !== 'today' ? { status: type } : {} })
+  if (type === 'abnormal') {
+    router.push({ path: '/visitor', query: { abnormal: '1' } })
+  } else {
+    router.push({ path: '/visitor', query: type !== 'today' ? { status: type } : {} })
+  }
 }
 
 const goToDetail = (id) => {
