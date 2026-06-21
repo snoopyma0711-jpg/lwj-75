@@ -70,6 +70,21 @@ const routes = [
     path: '/blacklist/:id',
     name: 'BlacklistDetail',
     component: () => import('../views/visitor/BlacklistDetail.vue')
+  },
+  {
+    path: '/decoration',
+    name: 'DecorationList',
+    component: () => import('../views/decoration/DecorationList.vue')
+  },
+  {
+    path: '/decoration/create',
+    name: 'DecorationCreate',
+    component: () => import('../views/decoration/DecorationCreate.vue')
+  },
+  {
+    path: '/decoration/:id',
+    name: 'DecorationDetail',
+    component: () => import('../views/decoration/DecorationDetail.vue')
   }
 ]
 

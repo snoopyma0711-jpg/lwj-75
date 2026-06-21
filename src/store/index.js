@@ -20,7 +20,12 @@ import {
   blacklistReasons,
   blacklistStatusMap,
   blacklistStatusColorMap,
-  blacklistRecords
+  blacklistRecords,
+  decorationTypes,
+  decorationStatusMap,
+  decorationStatusColorMap,
+  violationTypes,
+  decorationRecords
 } from './mockData'
 
 const today = dayjs('2026-06-17')
@@ -47,6 +52,11 @@ const state = reactive({
   blacklistReasons: [...blacklistReasons],
   blacklistStatusMap: { ...blacklistStatusMap },
   blacklistStatusColorMap: { ...blacklistStatusColorMap },
+  decorationRecords: [...decorationRecords],
+  decorationTypes: [...decorationTypes],
+  decorationStatusMap: { ...decorationStatusMap },
+  decorationStatusColorMap: { ...decorationStatusColorMap },
+  violationTypes: [...violationTypes],
   currentDate: today.format('YYYY-MM-DD')
 })
 
@@ -252,6 +262,45 @@ const getters = {
       visit.isAfter(dayjs(rel.approveTime)) &&
       visit.isBefore(dayjs(rel.expireTime).add(1, 'minute'))
     )
+  },
+
+  todayNewDecorations: computed(() => {
+    return state.decorationRecords.filter(r => 
+      dayjs(r.createTime).format('YYYY-MM-DD') === state.currentDate
+    )
+  }),
+
+  pendingAuditDecorations: computed(() => {
+    return state.decorationRecords.filter(r => r.status === 'pending_audit')
+  }),
+
+  constructingDecorations: computed(() => {
+    return state.decorationRecords.filter(r => r.status === 'constructing')
+  }),
+
+  todayPendingInspections: computed(() => {
+    return state.decorationRecords.filter(r => {
+      if (r.status !== 'constructing') return false
+      const lastInspection = r.inspectionRecords && r.inspectionRecords.length > 0
+        ? r.inspectionRecords[r.inspectionRecords.length - 1]
+        : null
+      if (!lastInspection) return true
+      return dayjs(lastInspection.time).format('YYYY-MM-DD') < state.currentDate
+    })
+  }),
+
+  abnormalDecorations: computed(() => {
+    return state.decorationRecords.filter(r => r.hasViolation || r.isOverdue)
+  }),
+
+  pendingDepositRefund: computed(() => {
+    return state.decorationRecords.filter(r => 
+      r.status === 'acceptance_passed' && !r.depositRefunded
+    )
+  }),
+
+  getDecorationById: (id) => {
+    return state.decorationRecords.find(r => r.id === id)
   }
 }
 
@@ -1237,6 +1286,356 @@ const actions = {
     return state.visitorRecords.filter(r => 
       r.visitorPhone === visitorPhone && r.status === 'rejected'
     ).length
+  },
+
+  createDecorationRecord(recordData) {
+    const todayStr = today.format('YYYYMMDD')
+    const todayCount = state.decorationRecords.filter(o => 
+      o.id.startsWith('ZX' + todayStr)
+    ).length + 1
+    
+    const newRecord = {
+      id: `ZX${todayStr}${String(todayCount).padStart(4, '0')}`,
+      ...recordData,
+      status: 'pending_audit',
+      createTime: nowStr,
+      createOperator: recordData.createOperator || '张客服（前台）',
+      auditTime: null,
+      auditOperator: null,
+      auditResult: null,
+      auditRemark: null,
+      enterTime: null,
+      enterOperator: null,
+      exitTime: null,
+      exitOperator: null,
+      inspectionRecords: [],
+      rectificationRecords: [],
+      acceptanceRecord: null,
+      isOverdue: false,
+      hasViolation: false,
+      processLogs: [
+        { time: nowStr, operator: recordData.createOperator || '张客服', action: '提交申请', content: `提交装修申请，缴纳押金${recordData.depositAmount}元` }
+      ]
+    }
+    
+    state.decorationRecords.unshift(newRecord)
+    return newRecord
+  },
+
+  auditDecoration(recordId, operator, isApproved, remark) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record || record.status !== 'pending_audit') return false
+
+    record.auditTime = nowStr
+    record.auditOperator = operator
+    record.auditResult = isApproved ? 'approved' : 'rejected'
+    record.auditRemark = remark || ''
+    
+    const missingMaterials = record.materialList.filter(m => !m.provided)
+    if (isApproved && missingMaterials.length > 0) {
+      record.processLogs.push({
+        time: nowStr,
+        operator: operator,
+        action: '审核通过（材料待补）',
+        content: `审核通过，但缺少材料：${missingMaterials.map(m => m.name).join('、')}。${remark || ''}`
+      })
+      record.status = 'audit_approved'
+    } else if (isApproved) {
+      record.status = 'audit_approved'
+      record.processLogs.push({
+        time: nowStr,
+        operator: operator,
+        action: '审核通过',
+        content: remark || '材料齐全，装修方案合理，审核通过'
+      })
+    } else {
+      record.status = 'audit_rejected'
+      record.processLogs.push({
+        time: nowStr,
+        operator: operator,
+        action: '审核不通过',
+        content: remark || '审核未通过'
+      })
+    }
+    
+    return true
+  },
+
+  enterDecoration(recordId, operator) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record || record.status !== 'audit_approved') return false
+
+    record.status = 'constructing'
+    record.enterTime = nowStr
+    record.enterOperator = operator
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '施工进场',
+      content: '施工人员和材料进场，已做好公共区域保护'
+    })
+    
+    return true
+  },
+
+  addInspectionRecord(recordId, inspectionData) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record) return false
+
+    const inspectionId = `INSP${Date.now()}`
+    const newInspection = {
+      id: inspectionId,
+      time: nowStr,
+      inspector: inspectionData.inspector,
+      content: inspectionData.content,
+      hasViolation: inspectionData.hasViolation,
+      violationType: inspectionData.violationType || null,
+      violationDesc: inspectionData.violationDesc || null,
+      images: []
+    }
+
+    if (!record.inspectionRecords) {
+      record.inspectionRecords = []
+    }
+    record.inspectionRecords.push(newInspection)
+
+    if (inspectionData.hasViolation) {
+      record.hasViolation = true
+      record.status = 'rectifying'
+    }
+
+    record.processLogs.push({
+      time: nowStr,
+      operator: inspectionData.inspector,
+      action: inspectionData.hasViolation ? '发现违规' : '日常巡查',
+      content: inspectionData.hasViolation 
+        ? `巡查发现违规：${inspectionData.violationDesc}，已发放整改通知书`
+        : '日常巡查，施工正常，无违规'
+    })
+
+    return newInspection
+  },
+
+  addRectificationRecord(recordId, rectificationData) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record) return false
+
+    const rectificationId = `RECT${Date.now()}`
+    const newRectification = {
+      id: rectificationId,
+      issueTime: nowStr,
+      issuePerson: rectificationData.issuePerson,
+      violationType: rectificationData.violationType,
+      violationDesc: rectificationData.violationDesc,
+      deadline: rectificationData.deadline,
+      rectifyTime: null,
+      rectifyDesc: null,
+      recheckTime: null,
+      recheckResult: null,
+      recheckRemark: null
+    }
+
+    if (!record.rectificationRecords) {
+      record.rectificationRecords = []
+    }
+    record.rectificationRecords.push(newRectification)
+    record.status = 'rectifying'
+
+    return newRectification
+  },
+
+  submitRectification(recordId, rectificationId, rectifyDesc) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record) return false
+
+    const rectification = record.rectificationRecords?.find(r => r.id === rectificationId)
+    if (!rectification) return false
+
+    rectification.rectifyTime = nowStr
+    rectification.rectifyDesc = rectifyDesc
+
+    record.processLogs.push({
+      time: nowStr,
+      operator: rectification.issuePerson,
+      action: '提交整改',
+      content: rectifyDesc
+    })
+
+    return true
+  },
+
+  recheckRectification(recordId, rectificationId, operator, isPassed, remark) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record) return false
+
+    const rectification = record.rectificationRecords?.find(r => r.id === rectificationId)
+    if (!rectification) return false
+
+    rectification.recheckTime = nowStr
+    rectification.recheckResult = isPassed ? 'passed' : 'failed'
+    rectification.recheckRemark = remark
+
+    const allRectified = record.rectificationRecords.every(r => r.recheckResult === 'passed')
+    
+    if (isPassed && allRectified) {
+      record.status = 'constructing'
+      record.hasViolation = false
+    }
+
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '整改复查',
+      content: isPassed 
+        ? `整改复查通过。${remark || ''}`
+        : `整改复查不通过：${remark || '需继续整改'}`
+    })
+
+    return true
+  },
+
+  applyAcceptance(recordId, applicant) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record || !['constructing', 'rectifying'].includes(record.status)) return false
+
+    record.status = 'completed'
+    record.processLogs.push({
+      time: nowStr,
+      operator: applicant,
+      action: '申请验收',
+      content: '施工完成，申请完工验收'
+    })
+
+    return true
+  },
+
+  completeAcceptance(recordId, checker, acceptanceData) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record || record.status !== 'completed') return false
+
+    const acceptanceId = `ACCEPT${Date.now()}`
+    record.acceptanceRecord = {
+      id: acceptanceId,
+      applyTime: record.processLogs.find(l => l.action === '申请验收')?.time || nowStr,
+      applyPerson: record.processLogs.find(l => l.action === '申请验收')?.operator || '业主',
+      checkTime: nowStr,
+      checker: checker,
+      result: acceptanceData.result,
+      qualityScore: acceptanceData.qualityScore,
+      cleanScore: acceptanceData.cleanScore,
+      structureScore: acceptanceData.structureScore,
+      remark: acceptanceData.remark,
+      images: []
+    }
+
+    if (acceptanceData.result === 'passed') {
+      record.status = 'acceptance_passed'
+      record.exitTime = nowStr
+      record.exitOperator = checker
+    } else {
+      record.status = 'acceptance_failed'
+    }
+
+    const avgScore = Math.round((acceptanceData.qualityScore + acceptanceData.cleanScore + acceptanceData.structureScore) / 3)
+    record.processLogs.push({
+      time: nowStr,
+      operator: checker,
+      action: acceptanceData.result === 'passed' ? '验收通过' : '验收不通过',
+      content: acceptanceData.result === 'passed'
+        ? `验收通过，综合评分${avgScore}分，可申请押金退还。${acceptanceData.remark || ''}`
+        : `验收不通过：${acceptanceData.remark || '存在质量问题，需整改后重新申请验收'}`
+    })
+
+    return true
+  },
+
+  refundDeposit(recordId, operator, refundAmount) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record || record.status !== 'acceptance_passed' || record.depositRefunded) return false
+
+    record.depositRefunded = true
+    record.depositRefundAmount = refundAmount
+    record.depositRefundDate = nowStr
+    record.status = 'deposit_refunded'
+
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '押金退还',
+      content: `押金${refundAmount}元已退还`
+    })
+
+    return true
+  },
+
+  updateDecorationRecord(recordId, updateData) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record) return false
+    
+    Object.assign(record, updateData)
+    return true
+  },
+
+  validateDecorationForm(formData) {
+    const errors = {}
+    
+    if (!formData.buildingId) {
+      errors.buildingId = '请选择楼栋'
+    }
+    if (!formData.roomNumber || formData.roomNumber.trim() === '') {
+      errors.roomNumber = '请填写房号'
+    }
+    if (!formData.ownerName || formData.ownerName.trim() === '') {
+      errors.ownerName = '请填写业主姓名'
+    } else if (formData.ownerName.trim().length < 2) {
+      errors.ownerName = '业主姓名至少2个字符'
+    }
+    if (!formData.ownerPhone || formData.ownerPhone.trim() === '') {
+      errors.ownerPhone = '请填写业主电话'
+    } else if (!/^1[3-9]\d{9}$/.test(formData.ownerPhone.trim())) {
+      errors.ownerPhone = '请输入正确的手机号码'
+    }
+    if (!formData.decorationType) {
+      errors.decorationType = '请选择装修类型'
+    }
+    if (!formData.startDate) {
+      errors.startDate = '请选择开始时间'
+    }
+    if (!formData.endDate) {
+      errors.endDate = '请选择结束时间'
+    } else if (formData.startDate && dayjs(formData.endDate).isBefore(dayjs(formData.startDate))) {
+      errors.endDate = '结束时间不能早于开始时间'
+    }
+    if (!formData.constructionCompany || formData.constructionCompany.trim() === '') {
+      errors.constructionCompany = '请填写施工单位'
+    }
+    if (!formData.foremanName || formData.foremanName.trim() === '') {
+      errors.foremanName = '请填写施工负责人'
+    } else if (formData.foremanName.trim().length < 2) {
+      errors.foremanName = '施工负责人姓名至少2个字符'
+    }
+    if (!formData.foremanPhone || formData.foremanPhone.trim() === '') {
+      errors.foremanPhone = '请填写负责人电话'
+    } else if (!/^1[3-9]\d{9}$/.test(formData.foremanPhone.trim())) {
+      errors.foremanPhone = '请输入正确的负责人手机号码'
+    }
+    if (formData.workerCount === '' || formData.workerCount === null || formData.workerCount === undefined) {
+      errors.workerCount = '请填写施工人数'
+    } else if (isNaN(Number(formData.workerCount)) || Number(formData.workerCount) <= 0) {
+      errors.workerCount = '施工人数必须大于0'
+    }
+    if (formData.depositAmount === '' || formData.depositAmount === null || formData.depositAmount === undefined) {
+      errors.depositAmount = '请填写押金金额'
+    } else if (isNaN(Number(formData.depositAmount)) || Number(formData.depositAmount) < 0) {
+      errors.depositAmount = '押金金额不能为负数'
+    }
+    if (!formData.decorationContent || formData.decorationContent.trim() === '') {
+      errors.decorationContent = '请填写装修内容'
+    } else if (formData.decorationContent.trim().length < 10) {
+      errors.decorationContent = '装修内容至少需要10个字'
+    }
+    
+    return errors
   }
 }
 
@@ -1248,4 +1647,21 @@ export function useStore() {
   }
 }
 
-export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, visitorPurposes, visitorStatusMap, visitorStatusColorMap, blacklistReasons, blacklistStatusMap, blacklistStatusColorMap }
+export { 
+  repairCategories, 
+  urgentLevels, 
+  engineers, 
+  serviceStaff, 
+  satisfactionLevels, 
+  visitStatusMap, 
+  visitorPurposes, 
+  visitorStatusMap, 
+  visitorStatusColorMap, 
+  blacklistReasons, 
+  blacklistStatusMap, 
+  blacklistStatusColorMap,
+  decorationTypes,
+  decorationStatusMap,
+  decorationStatusColorMap,
+  violationTypes
+}

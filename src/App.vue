@@ -10,7 +10,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <h1 class="ml-3 text-xl font-bold text-gray-900">小区访客预约与放行协同台</h1>
+              <h1 class="ml-3 text-xl font-bold text-gray-900">智慧小区物业管理平台</h1>
             </div>
             <nav class="hidden md:ml-10 md:flex md:space-x-1">
               <router-link
@@ -104,6 +104,7 @@ const roleName = computed(() => {
 
 const menuItems = [
   { path: '/', name: '首页仪表盘' },
+  { path: '/decoration', name: '装修管理' },
   { path: '/visitor', name: '访客预约' },
   { path: '/blacklist', name: '黑名单管理' }
 ]

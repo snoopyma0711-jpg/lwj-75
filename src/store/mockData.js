@@ -1636,4 +1636,728 @@ const generateBlacklistRecords = () => {
 
 export const blacklistRecords = generateBlacklistRecords()
 
+export const decorationTypes = [
+  { value: 'full', label: '全装修' },
+  { value: 'partial', label: '局部装修' },
+  { value: 'refurbish', label: '翻新改造' },
+  { value: 'water_electric', label: '水电改造' },
+  { value: 'wall_floor', label: '墙地面处理' },
+  { value: 'other', label: '其他' }
+]
+
+export const decorationStatusMap = {
+  pending_audit: '待审核',
+  audit_rejected: '审核不通过',
+  audit_approved: '审核通过',
+  constructing: '施工中',
+  inspecting: '巡查中',
+  rectifying: '整改中',
+  completed: '完工验收',
+  acceptance_passed: '验收通过',
+  acceptance_failed: '验收不通过',
+  deposit_refunded: '押金已退还',
+  cancelled: '已取消'
+}
+
+export const decorationStatusColorMap = {
+  pending_audit: 'bg-yellow-100 text-yellow-700',
+  audit_rejected: 'bg-red-100 text-red-700',
+  audit_approved: 'bg-blue-100 text-blue-700',
+  constructing: 'bg-orange-100 text-orange-700',
+  inspecting: 'bg-purple-100 text-purple-700',
+  rectifying: 'bg-red-100 text-red-700',
+  completed: 'bg-cyan-100 text-cyan-700',
+  acceptance_passed: 'bg-green-100 text-green-700',
+  acceptance_failed: 'bg-red-100 text-red-700',
+  deposit_refunded: 'bg-gray-100 text-gray-700',
+  cancelled: 'bg-gray-100 text-gray-600'
+}
+
+export const violationTypes = [
+  { value: 'noise', label: '噪音扰民' },
+  { value: 'dust', label: '粉尘污染' },
+  { value: 'rubbish', label: '垃圾乱堆' },
+  { value: 'structure', label: '破坏结构' },
+  { value: 'pipeline', label: '管线破坏' },
+  { value: 'fire', label: '消防隐患' },
+  { value: 'time', label: '超时施工' },
+  { value: 'personnel', label: '人员未登记' },
+  { value: 'other', label: '其他违规' }
+]
+
+const generateDecorationRecords = () => {
+  const records = []
+  const ownerNames = ['张伟', '李娜', '王芳', '刘洋', '陈静', '杨帆', '赵磊', '黄敏', '周杰', '吴婷', '徐强', '孙丽']
+  const constructionCompanies = ['阳光装饰工程有限公司', '宜家装修设计公司', '尚品装饰工程队', '雅居装修有限公司', '豪庭装饰设计', '美居装修队']
+  const foremanNames = ['李工', '王师傅', '张工头', '刘队长', '陈工', '赵师傅']
+
+  const addDays = (date, days) => dayjs(date).add(days, 'day').format('YYYY-MM-DD')
+
+  records.push({
+    id: 'ZX20260617001',
+    roomNumber: '1号楼1单元1501室',
+    buildingId: 'B001',
+    ownerName: '王女士',
+    ownerPhone: '138****1111',
+    decorationType: 'full',
+    startDate: today.format('YYYY-MM-DD'),
+    endDate: addDays(today, 60),
+    constructionCompany: '阳光装饰工程有限公司',
+    constructionLicense: 'JY20251234',
+    foremanName: '李工',
+    foremanPhone: '139****2222',
+    workerCount: 8,
+    depositAmount: 5000,
+    depositPaid: true,
+    depositPaidDate: today.subtract(2, 'day').format('YYYY-MM-DD'),
+    depositRefunded: false,
+    depositRefundAmount: null,
+    depositRefundDate: null,
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: true },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '全屋装修，包括水电改造、墙面地面处理、吊顶、橱柜安装、门窗更换等',
+    specialRequirements: '节假日不施工，工作日施工时间8:00-12:00,14:00-18:00',
+    status: 'pending_audit',
+    createTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:30:00',
+    createOperator: '王女士（业主APP）',
+    auditTime: null,
+    auditOperator: null,
+    auditResult: null,
+    auditRemark: null,
+    enterTime: null,
+    enterOperator: null,
+    exitTime: null,
+    exitOperator: null,
+    inspectionRecords: [],
+    rectificationRecords: [],
+    acceptanceRecord: null,
+    isOverdue: false,
+    hasViolation: false,
+    processLogs: [
+      { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:30:00', operator: '王女士', action: '提交申请', content: '业主通过APP提交装修申请，缴纳押金5000元' }
+    ]
+  })
+
+  records.push({
+    id: 'ZX20260617002',
+    roomNumber: '2号楼2单元2003室',
+    buildingId: 'B002',
+    ownerName: '李先生',
+    ownerPhone: '139****2222',
+    decorationType: 'partial',
+    startDate: today.format('YYYY-MM-DD'),
+    endDate: addDays(today, 15),
+    constructionCompany: '宜家装修设计公司',
+    constructionLicense: 'JY20255678',
+    foremanName: '王师傅',
+    foremanPhone: '136****3333',
+    workerCount: 4,
+    depositAmount: 3000,
+    depositPaid: true,
+    depositPaidDate: today.subtract(3, 'day').format('YYYY-MM-DD'),
+    depositRefunded: false,
+    depositRefundAmount: null,
+    depositRefundDate: null,
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: false },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '卫生间改造，包括瓷砖更换、洁具更新、防水重做',
+    specialRequirements: '',
+    status: 'pending_audit',
+    createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:20:00',
+    createOperator: '李先生（业主APP）',
+    auditTime: null,
+    auditOperator: null,
+    auditResult: null,
+    auditRemark: null,
+    enterTime: null,
+    enterOperator: null,
+    exitTime: null,
+    exitOperator: null,
+    inspectionRecords: [],
+    rectificationRecords: [],
+    acceptanceRecord: null,
+    isOverdue: false,
+    hasViolation: false,
+    processLogs: [
+      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:20:00', operator: '李先生', action: '提交申请', content: '业主提交卫生间改造装修申请，缴纳押金3000元' }
+    ]
+  })
+
+  records.push({
+    id: 'ZX20260617003',
+    roomNumber: '3号楼1单元0502室',
+    buildingId: 'B003',
+    ownerName: '张阿姨',
+    ownerPhone: '136****3333',
+    decorationType: 'wall_floor',
+    startDate: today.subtract(5, 'day').format('YYYY-MM-DD'),
+    endDate: addDays(today.subtract(5, 'day'), 10),
+    constructionCompany: '尚品装饰工程队',
+    constructionLicense: 'JY20259012',
+    foremanName: '张工头',
+    foremanPhone: '137****4444',
+    workerCount: 3,
+    depositAmount: 2000,
+    depositPaid: true,
+    depositPaidDate: today.subtract(7, 'day').format('YYYY-MM-DD'),
+    depositRefunded: false,
+    depositRefundAmount: null,
+    depositRefundDate: null,
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: true },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '客厅墙面刷漆、地板更换',
+    specialRequirements: '',
+    status: 'constructing',
+    createTime: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 09:15:00',
+    createOperator: '张阿姨（业主APP）',
+    auditTime: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+    auditOperator: '张客服',
+    auditResult: 'approved',
+    auditRemark: '材料齐全，装修方案合理，审核通过',
+    enterTime: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 08:00:00',
+    enterOperator: '楼栋管家-小赵',
+    exitTime: null,
+    exitOperator: null,
+    inspectionRecords: [
+      {
+        id: 'INSP001',
+        time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 10:30:00',
+        inspector: '楼栋管家-小赵',
+        content: '日常巡查，施工人员均佩戴出入证，现场整洁，无违规操作',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      }
+    ],
+    rectificationRecords: [],
+    acceptanceRecord: null,
+    isOverdue: false,
+    hasViolation: false,
+    processLogs: [
+      { time: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 09:15:00', operator: '张阿姨', action: '提交申请', content: '业主提交客厅装修申请，缴纳押金2000元' },
+      { time: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '张客服', action: '审核通过', content: '材料齐全，装修方案合理，审核通过' },
+      { time: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 08:00:00', operator: '楼栋管家-小赵', action: '施工进场', content: '施工人员和材料进场，已做好公共区域保护' },
+      { time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 10:30:00', operator: '楼栋管家-小赵', action: '日常巡查', content: '施工正常，无违规' }
+    ]
+  })
+
+  records.push({
+    id: 'ZX20260616001',
+    roomNumber: '5号楼3单元1201室',
+    buildingId: 'B004',
+    ownerName: '赵先生',
+    ownerPhone: '137****4444',
+    decorationType: 'water_electric',
+    startDate: today.subtract(10, 'day').format('YYYY-MM-DD'),
+    endDate: addDays(today.subtract(10, 'day'), 7),
+    constructionCompany: '雅居装修有限公司',
+    constructionLicense: 'JY20253456',
+    foremanName: '刘队长',
+    foremanPhone: '138****5555',
+    workerCount: 2,
+    depositAmount: 1500,
+    depositPaid: true,
+    depositPaidDate: today.subtract(12, 'day').format('YYYY-MM-DD'),
+    depositRefunded: false,
+    depositRefundAmount: null,
+    depositRefundDate: null,
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: true },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '全屋水电线路改造',
+    specialRequirements: '',
+    status: 'rectifying',
+    createTime: today.subtract(12, 'day').format('YYYY-MM-DD') + ' 11:00:00',
+    createOperator: '赵先生（业主APP）',
+    auditTime: today.subtract(11, 'day').format('YYYY-MM-DD') + ' 09:30:00',
+    auditOperator: '李客服',
+    auditResult: 'approved',
+    auditRemark: '审核通过',
+    enterTime: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 08:30:00',
+    enterOperator: '楼栋管家-小钱',
+    exitTime: null,
+    exitOperator: null,
+    inspectionRecords: [
+      {
+        id: 'INSP002',
+        time: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+        inspector: '楼栋管家-小钱',
+        content: '巡查发现施工时间超时（12:30仍在施工），且有建筑垃圾堆放在楼道',
+        hasViolation: true,
+        violationType: 'time,rubbish',
+        violationDesc: '超时施工、垃圾乱堆',
+        images: []
+      },
+      {
+        id: 'INSP003',
+        time: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        inspector: '楼栋管家-小钱',
+        content: '复查整改情况，垃圾已清理，但仍有超时施工情况',
+        hasViolation: true,
+        violationType: 'time',
+        violationDesc: '超时施工未整改',
+        images: []
+      }
+    ],
+    rectificationRecords: [
+      {
+        id: 'RECT001',
+        issueTime: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+        issuePerson: '楼栋管家-小钱',
+        violationType: 'time,rubbish',
+        violationDesc: '1. 中午12:30仍在施工，违反施工时间规定；2. 建筑垃圾堆放在楼道未及时清理',
+        deadline: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 18:00:00',
+        rectifyTime: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 16:00:00',
+        rectifyDesc: '垃圾已清理，但超时施工问题未完全解决',
+        recheckTime: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        recheckResult: 'failed',
+        recheckRemark: '垃圾已清理，但仍存在超时施工问题，需继续整改'
+      }
+    ],
+    acceptanceRecord: null,
+    isOverdue: true,
+    hasViolation: true,
+    processLogs: [
+      { time: today.subtract(12, 'day').format('YYYY-MM-DD') + ' 11:00:00', operator: '赵先生', action: '提交申请', content: '业主提交水电改造申请，缴纳押金1500元' },
+      { time: today.subtract(11, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '李客服', action: '审核通过', content: '审核通过' },
+      { time: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 08:30:00', operator: '楼栋管家-小钱', action: '施工进场', content: '施工人员进场' },
+      { time: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '楼栋管家-小钱', action: '发现违规', content: '发现超时施工和垃圾乱堆问题，已发放整改通知书' },
+      { time: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 16:00:00', operator: '刘队长', action: '提交整改', content: '已清理楼道垃圾' },
+      { time: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '楼栋管家-小钱', action: '整改复查', content: '垃圾已清理，但超时施工问题未解决，整改不通过，需继续整改' }
+    ]
+  })
+
+  records.push({
+    id: 'ZX20260610001',
+    roomNumber: '6号楼1单元0803室',
+    buildingId: 'B005',
+    ownerName: '陈女士',
+    ownerPhone: '135****5555',
+    decorationType: 'full',
+    startDate: today.subtract(30, 'day').format('YYYY-MM-DD'),
+    endDate: addDays(today.subtract(30, 'day'), 45),
+    constructionCompany: '豪庭装饰设计',
+    constructionLicense: 'JY20257890',
+    foremanName: '陈工',
+    foremanPhone: '136****6666',
+    workerCount: 10,
+    depositAmount: 8000,
+    depositPaid: true,
+    depositPaidDate: today.subtract(32, 'day').format('YYYY-MM-DD'),
+    depositRefunded: false,
+    depositRefundAmount: null,
+    depositRefundDate: null,
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: true },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '全屋精装修，包括水电、泥水、木工、油漆、安装等全部工程',
+    specialRequirements: '',
+    status: 'completed',
+    createTime: today.subtract(32, 'day').format('YYYY-MM-DD') + ' 15:30:00',
+    createOperator: '陈女士（业主APP）',
+    auditTime: today.subtract(31, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+    auditOperator: '张客服',
+    auditResult: 'approved',
+    auditRemark: '材料齐全，方案完整，审核通过',
+    enterTime: today.subtract(30, 'day').format('YYYY-MM-DD') + ' 08:00:00',
+    enterOperator: '楼栋管家-小孙',
+    exitTime: null,
+    exitOperator: null,
+    inspectionRecords: [
+      {
+        id: 'INSP004',
+        time: today.subtract(25, 'day').format('YYYY-MM-DD') + ' 09:30:00',
+        inspector: '楼栋管家-小孙',
+        content: '水电工程验收，管线布置规范，符合要求',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      },
+      {
+        id: 'INSP005',
+        time: today.subtract(15, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+        inspector: '楼栋管家-小孙',
+        content: '泥水工程检查，瓷砖铺贴平整，无空鼓',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      },
+      {
+        id: 'INSP006',
+        time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        inspector: '楼栋管家-小孙',
+        content: '完工前巡查，整体质量良好',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      }
+    ],
+    rectificationRecords: [],
+    acceptanceRecord: null,
+    isOverdue: false,
+    hasViolation: false,
+    processLogs: [
+      { time: today.subtract(32, 'day').format('YYYY-MM-DD') + ' 15:30:00', operator: '陈女士', action: '提交申请', content: '业主提交全屋精装修申请，缴纳押金8000元' },
+      { time: today.subtract(31, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '张客服', action: '审核通过', content: '材料齐全，方案完整，审核通过' },
+      { time: today.subtract(30, 'day').format('YYYY-MM-DD') + ' 08:00:00', operator: '楼栋管家-小孙', action: '施工进场', content: '施工人员和材料进场' },
+      { time: today.subtract(25, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '楼栋管家-小孙', action: '水电验收', content: '水电工程验收合格' },
+      { time: today.subtract(15, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '楼栋管家-小孙', action: '泥水验收', content: '泥水工程验收合格' },
+      { time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '楼栋管家-小孙', action: '完工巡查', content: '施工基本完成，申请完工验收' }
+    ]
+  })
+
+  records.push({
+    id: 'ZX20260520001',
+    roomNumber: '8号楼2单元0301室',
+    buildingId: 'B006',
+    ownerName: '刘先生',
+    ownerPhone: '133****6666',
+    decorationType: 'refurbish',
+    startDate: today.subtract(45, 'day').format('YYYY-MM-DD'),
+    endDate: addDays(today.subtract(45, 'day'), 30),
+    constructionCompany: '美居装修队',
+    constructionLicense: 'JY20252345',
+    foremanName: '赵师傅',
+    foremanPhone: '135****7777',
+    workerCount: 5,
+    depositAmount: 4000,
+    depositPaid: true,
+    depositPaidDate: today.subtract(47, 'day').format('YYYY-MM-DD'),
+    depositRefunded: false,
+    depositRefundAmount: null,
+    depositRefundDate: null,
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: true },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '旧房翻新，包括墙面铲除重新刷漆、地板更换、厨卫改造',
+    specialRequirements: '',
+    status: 'acceptance_passed',
+    createTime: today.subtract(47, 'day').format('YYYY-MM-DD') + ' 09:00:00',
+    createOperator: '刘先生（业主APP）',
+    auditTime: today.subtract(46, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+    auditOperator: '李客服',
+    auditResult: 'approved',
+    auditRemark: '审核通过',
+    enterTime: today.subtract(45, 'day').format('YYYY-MM-DD') + ' 08:30:00',
+    enterOperator: '楼栋管家-小李',
+    exitTime: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 17:00:00',
+    exitOperator: '楼栋管家-小李',
+    inspectionRecords: [
+      {
+        id: 'INSP007',
+        time: today.subtract(35, 'day').format('YYYY-MM-DD') + ' 11:00:00',
+        inspector: '楼栋管家-小李',
+        content: '日常巡查，施工正常',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      },
+      {
+        id: 'INSP008',
+        time: today.subtract(20, 'day').format('YYYY-MM-DD') + ' 15:00:00',
+        inspector: '楼栋管家-小李',
+        content: '巡查发现轻微噪音问题，已提醒施工方注意',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      }
+    ],
+    rectificationRecords: [],
+    acceptanceRecord: {
+      id: 'ACCEPT001',
+      applyTime: today.subtract(12, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+      applyPerson: '刘先生',
+      checkTime: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+      checker: '工程主管-王工、楼栋管家-小李',
+      result: 'passed',
+      qualityScore: 90,
+      cleanScore: 95,
+      structureScore: 100,
+      remark: '整体装修质量良好，公共区域已恢复整洁，无损坏',
+      images: []
+    },
+    isOverdue: false,
+    hasViolation: false,
+    processLogs: [
+      { time: today.subtract(47, 'day').format('YYYY-MM-DD') + ' 09:00:00', operator: '刘先生', action: '提交申请', content: '业主提交旧房翻新申请，缴纳押金4000元' },
+      { time: today.subtract(46, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '李客服', action: '审核通过', content: '审核通过' },
+      { time: today.subtract(45, 'day').format('YYYY-MM-DD') + ' 08:30:00', operator: '楼栋管家-小李', action: '施工进场', content: '施工人员进场' },
+      { time: today.subtract(12, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '刘先生', action: '申请验收', content: '施工完成，申请完工验收' },
+      { time: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '工程主管-王工', action: '验收通过', content: '验收通过，综合评分92分，可申请押金退还' }
+    ]
+  })
+
+  records.push({
+    id: 'ZX20260515001',
+    roomNumber: '1号楼2单元1002室',
+    buildingId: 'B001',
+    ownerName: '孙女士',
+    ownerPhone: '132****7777',
+    decorationType: 'partial',
+    startDate: today.subtract(50, 'day').format('YYYY-MM-DD'),
+    endDate: addDays(today.subtract(50, 'day'), 20),
+    constructionCompany: '阳光装饰工程有限公司',
+    constructionLicense: 'JY20251235',
+    foremanName: '李工',
+    foremanPhone: '139****2233',
+    workerCount: 3,
+    depositAmount: 2500,
+    depositPaid: true,
+    depositPaidDate: today.subtract(52, 'day').format('YYYY-MM-DD'),
+    depositRefunded: true,
+    depositRefundAmount: 2500,
+    depositRefundDate: today.subtract(25, 'day').format('YYYY-MM-DD'),
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: true },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '厨房翻新，橱柜更换、瓷砖重新铺贴',
+    specialRequirements: '',
+    status: 'deposit_refunded',
+    createTime: today.subtract(52, 'day').format('YYYY-MM-DD') + ' 16:00:00',
+    createOperator: '孙女士（业主APP）',
+    auditTime: today.subtract(51, 'day').format('YYYY-MM-DD') + ' 09:30:00',
+    auditOperator: '张客服',
+    auditResult: 'approved',
+    auditRemark: '审核通过',
+    enterTime: today.subtract(50, 'day').format('YYYY-MM-DD') + ' 08:00:00',
+    enterOperator: '楼栋管家-小孙',
+    exitTime: today.subtract(28, 'day').format('YYYY-MM-DD') + ' 16:30:00',
+    exitOperator: '楼栋管家-小孙',
+    inspectionRecords: [
+      {
+        id: 'INSP009',
+        time: today.subtract(40, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        inspector: '楼栋管家-小孙',
+        content: '日常巡查，施工正常',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      }
+    ],
+    rectificationRecords: [],
+    acceptanceRecord: {
+      id: 'ACCEPT002',
+      applyTime: today.subtract(30, 'day').format('YYYY-MM-DD') + ' 11:00:00',
+      applyPerson: '孙女士',
+      checkTime: today.subtract(28, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+      checker: '工程主管-王工',
+      result: 'passed',
+      qualityScore: 88,
+      cleanScore: 92,
+      structureScore: 95,
+      remark: '厨房翻新质量合格，公共区域无损坏',
+      images: []
+    },
+    isOverdue: false,
+    hasViolation: false,
+    processLogs: [
+      { time: today.subtract(52, 'day').format('YYYY-MM-DD') + ' 16:00:00', operator: '孙女士', action: '提交申请', content: '业主提交厨房翻新申请，缴纳押金2500元' },
+      { time: today.subtract(51, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '张客服', action: '审核通过', content: '审核通过' },
+      { time: today.subtract(50, 'day').format('YYYY-MM-DD') + ' 08:00:00', operator: '楼栋管家-小孙', action: '施工进场', content: '施工人员进场' },
+      { time: today.subtract(30, 'day').format('YYYY-MM-DD') + ' 11:00:00', operator: '孙女士', action: '申请验收', content: '施工完成，申请验收' },
+      { time: today.subtract(28, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '工程主管-王工', action: '验收通过', content: '验收通过' },
+      { time: today.subtract(25, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '财务-张会计', action: '押金退还', content: '押金2500元已全额退还' }
+    ]
+  })
+
+  records.push({
+    id: 'ZX20260601001',
+    roomNumber: '2号楼1单元1501室',
+    buildingId: 'B002',
+    ownerName: '周先生',
+    ownerPhone: '131****8888',
+    decorationType: 'water_electric',
+    startDate: today.subtract(15, 'day').format('YYYY-MM-DD'),
+    endDate: addDays(today.subtract(15, 'day'), 5),
+    constructionCompany: '尚品装饰工程队',
+    constructionLicense: 'JY20259013',
+    foremanName: '张工头',
+    foremanPhone: '137****4455',
+    workerCount: 2,
+    depositAmount: 1000,
+    depositPaid: true,
+    depositPaidDate: today.subtract(17, 'day').format('YYYY-MM-DD'),
+    depositRefunded: false,
+    depositRefundAmount: null,
+    depositRefundDate: null,
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: true },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '卫生间水电改造',
+    specialRequirements: '',
+    status: 'acceptance_failed',
+    createTime: today.subtract(17, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+    createOperator: '周先生（业主APP）',
+    auditTime: today.subtract(16, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+    auditOperator: '李客服',
+    auditResult: 'approved',
+    auditRemark: '审核通过',
+    enterTime: today.subtract(15, 'day').format('YYYY-MM-DD') + ' 08:30:00',
+    enterOperator: '楼栋管家-小赵',
+    exitTime: null,
+    exitOperator: null,
+    inspectionRecords: [
+      {
+        id: 'INSP010',
+        time: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 11:00:00',
+        inspector: '楼栋管家-小赵',
+        content: '巡查发现防水试验未按要求做48小时闭水试验',
+        hasViolation: true,
+        violationType: 'structure',
+        violationDesc: '防水施工不规范',
+        images: []
+      }
+    ],
+    rectificationRecords: [
+      {
+        id: 'RECT002',
+        issueTime: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 11:00:00',
+        issuePerson: '楼栋管家-小赵',
+        violationType: 'structure',
+        violationDesc: '防水施工不规范，未做48小时闭水试验',
+        deadline: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 18:00:00',
+        rectifyTime: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 16:00:00',
+        rectifyDesc: '已重新做闭水试验',
+        recheckTime: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        recheckResult: 'passed',
+        recheckRemark: '闭水试验合格'
+      }
+    ],
+    acceptanceRecord: {
+      id: 'ACCEPT003',
+      applyTime: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 09:00:00',
+      applyPerson: '周先生',
+      checkTime: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+      checker: '工程主管-王工',
+      result: 'failed',
+      qualityScore: 60,
+      cleanScore: 75,
+      structureScore: 65,
+      remark: '1. 水管接口有轻微渗水；2. 电路接线不规范存在安全隐患；3. 瓷砖铺贴有空鼓。需整改后重新申请验收。',
+      images: []
+    },
+    isOverdue: true,
+    hasViolation: true,
+    processLogs: [
+      { time: today.subtract(17, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '周先生', action: '提交申请', content: '业主提交卫生间水电改造申请，缴纳押金1000元' },
+      { time: today.subtract(16, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '李客服', action: '审核通过', content: '审核通过' },
+      { time: today.subtract(15, 'day').format('YYYY-MM-DD') + ' 08:30:00', operator: '楼栋管家-小赵', action: '施工进场', content: '施工人员进场' },
+      { time: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 11:00:00', operator: '楼栋管家-小赵', action: '发现违规', content: '防水施工不规范，要求整改' },
+      { time: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '楼栋管家-小赵', action: '整改复查', content: '防水整改合格' },
+      { time: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 09:00:00', operator: '周先生', action: '申请验收', content: '申请完工验收' },
+      { time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '工程主管-王工', action: '验收不通过', content: '存在多处质量问题，需整改后重新验收' }
+    ]
+  })
+
+  records.push({
+    id: 'ZX20260617004',
+    roomNumber: '5号楼1单元2201室',
+    buildingId: 'B004',
+    ownerName: '孙先生',
+    ownerPhone: '138****1212',
+    decorationType: 'refurbish',
+    startDate: today.subtract(20, 'day').format('YYYY-MM-DD'),
+    endDate: addDays(today.subtract(20, 'day'), 25),
+    constructionCompany: '宜家装修设计公司',
+    constructionLicense: 'JY20255679',
+    foremanName: '王师傅',
+    foremanPhone: '136****3344',
+    workerCount: 6,
+    depositAmount: 5000,
+    depositPaid: true,
+    depositPaidDate: today.subtract(22, 'day').format('YYYY-MM-DD'),
+    depositRefunded: false,
+    depositRefundAmount: null,
+    depositRefundDate: null,
+    materialList: [
+      { name: '装修图纸及方案', provided: true },
+      { name: '施工人员身份证复印件', provided: true },
+      { name: '特种作业操作证', provided: true },
+      { name: '防火责任书', provided: true }
+    ],
+    decorationContent: '全屋翻新改造',
+    specialRequirements: '',
+    status: 'constructing',
+    createTime: today.subtract(22, 'day').format('YYYY-MM-DD') + ' 11:00:00',
+    createOperator: '孙先生（业主APP）',
+    auditTime: today.subtract(21, 'day').format('YYYY-MM-DD') + ' 09:00:00',
+    auditOperator: '张客服',
+    auditResult: 'approved',
+    auditRemark: '审核通过',
+    enterTime: today.subtract(20, 'day').format('YYYY-MM-DD') + ' 08:00:00',
+    enterOperator: '楼栋管家-小钱',
+    exitTime: null,
+    exitOperator: null,
+    inspectionRecords: [
+      {
+        id: 'INSP011',
+        time: today.subtract(15, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        inspector: '楼栋管家-小钱',
+        content: '日常巡查，施工正常',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      },
+      {
+        id: 'INSP012',
+        time: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 14:30:00',
+        inspector: '楼栋管家-小钱',
+        content: '日常巡查，施工正常',
+        hasViolation: false,
+        violationType: null,
+        violationDesc: null,
+        images: []
+      }
+    ],
+    rectificationRecords: [],
+    acceptanceRecord: null,
+    isOverdue: true,
+    hasViolation: false,
+    processLogs: [
+      { time: today.subtract(22, 'day').format('YYYY-MM-DD') + ' 11:00:00', operator: '孙先生', action: '提交申请', content: '业主提交全屋翻新申请，缴纳押金5000元' },
+      { time: today.subtract(21, 'day').format('YYYY-MM-DD') + ' 09:00:00', operator: '张客服', action: '审核通过', content: '审核通过' },
+      { time: today.subtract(20, 'day').format('YYYY-MM-DD') + ' 08:00:00', operator: '楼栋管家-小钱', action: '施工进场', content: '施工人员进场' }
+    ]
+  })
+
+  return records
+}
+
+export const decorationRecords = generateDecorationRecords()
+
 export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, generateRepairOrders, generateVisitorRecords }
