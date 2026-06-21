@@ -121,6 +121,51 @@
           </div>
         </div>
       </div>
+
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow border-2 border-orange-100 bg-gradient-to-br from-orange-50 to-white" @click="goToDecorationWithFilter('today_expiring')">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">装修今日到期</p>
+            <p class="text-3xl font-bold text-orange-600 mt-1">{{ store.todayExpiringDecorations.value.length }}</p>
+            <p class="text-xs text-orange-500 mt-1">今日计划完工</p>
+          </div>
+          <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow border-2 border-purple-100 bg-gradient-to-br from-purple-50 to-white" @click="goToDecorationWithFilter('pending_extension')">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">延期待审核</p>
+            <p class="text-3xl font-bold text-purple-600 mt-1">{{ store.pendingExtensionAudits.value.length }}</p>
+            <p class="text-xs text-purple-500 mt-1">等待审批的延期申请</p>
+          </div>
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow border-2 border-rose-100 bg-gradient-to-br from-rose-50 to-white" @click="goToDecorationWithFilter('overdue')">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">已延期施工</p>
+            <p class="text-3xl font-bold text-rose-600 mt-1">{{ store.overdueDecorations.value.length }}</p>
+            <p class="text-xs text-rose-500 mt-1">已超过计划完工日期</p>
+          </div>
+          <div class="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -312,6 +357,10 @@ const goToDetail = (id) => {
 
 const goToBlacklist = () => {
   router.push('/blacklist')
+}
+
+const goToDecorationWithFilter = (filter) => {
+  router.push({ path: '/decoration', query: { filter } })
 }
 
 onMounted(() => {

@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       <div class="card p-5 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover:shadow-lg transition-shadow" @click="quickFilter('today')">
         <div class="flex items-center justify-between">
           <div>
@@ -77,6 +77,48 @@
           <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 cursor-pointer hover:shadow-lg transition-shadow" @click="quickFilter('today_expiring')">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-orange-600 font-medium">今日到期</p>
+            <p class="text-3xl font-bold text-orange-700 mt-2">{{ todayExpiringDecorations.length }}</p>
+          </div>
+          <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow" @click="quickFilter('pending_extension')">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-purple-600 font-medium">延期待审核</p>
+            <p class="text-3xl font-bold text-purple-700 mt-2">{{ pendingExtensionAudits.length }}</p>
+          </div>
+          <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5 bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200 cursor-pointer hover:shadow-lg transition-shadow" @click="quickFilter('overdue')">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-rose-600 font-medium">已延期施工</p>
+            <p class="text-3xl font-bold text-rose-700 mt-2">{{ overdueDecorations.length }}</p>
+          </div>
+          <div class="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
@@ -136,6 +178,15 @@
           </select>
         </div>
         <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">延期状态</label>
+          <select v-model="filters.extensionStatus" class="select text-sm">
+            <option value="">全部</option>
+            <option value="pending">待审核延期申请</option>
+            <option value="approved">已通过延期</option>
+            <option value="rejected">有驳回记录</option>
+          </select>
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">时间范围</label>
           <select v-model="filters.timeRange" class="select text-sm">
             <option value="all">全部时间</option>
@@ -171,6 +222,7 @@
               <th>业主</th>
               <th>装修类型</th>
               <th>施工期限</th>
+              <th>延期状态</th>
               <th>施工单位</th>
               <th>状态</th>
               <th>异常提醒</th>
@@ -193,7 +245,19 @@
               </td>
               <td>
                 <div class="text-sm">{{ record.startDate }}</div>
-                <div class="text-xs text-gray-500">至 {{ record.endDate }}</div>
+                <div class="text-xs" :class="isExpiringSoon(record) && !record.isOverdue ? 'text-orange-600 font-medium' : 'text-gray-500'">
+                  至 {{ record.endDate }}
+                  <span v-if="getDaysRemaining(record) !== null" class="ml-1">
+                    ({{ getDaysRemaining(record) > 0 ? '剩' + getDaysRemaining(record) + '天' : getDaysRemaining(record) === 0 ? '今日到期' : '已逾期' + Math.abs(getDaysRemaining(record)) + '天' }})
+                  </span>
+                </div>
+              </td>
+              <td>
+                <div class="flex flex-wrap gap-1">
+                  <span v-if="hasExtensionApproved(record)" class="badge bg-purple-100 text-purple-700 text-xs">已延期</span>
+                  <span v-if="hasExtensionPending(record)" class="badge bg-yellow-100 text-yellow-700 text-xs">延期待审核</span>
+                  <span v-if="!hasExtensionApproved(record) && !hasExtensionPending(record)" class="text-gray-400 text-xs">-</span>
+                </div>
               </td>
               <td class="text-sm">{{ record.constructionCompany }}</td>
               <td>
@@ -202,12 +266,13 @@
               <td>
                 <div class="flex flex-wrap gap-1">
                   <span v-if="record.isOverdue" class="badge bg-red-100 text-red-600 text-xs">施工逾期</span>
+                  <span v-if="isExpiringSoon(record) && !record.isOverdue" class="badge bg-orange-100 text-orange-600 text-xs">即将到期</span>
                   <span v-if="record.hasViolation" class="badge bg-orange-100 text-orange-600 text-xs">有违规</span>
                   <span v-if="hasMissingMaterials(record)" class="badge bg-yellow-100 text-yellow-700 text-xs">材料缺失</span>
                   <span v-if="hasUnrectified(record)" class="badge bg-red-100 text-red-600 text-xs">整改未完成</span>
                   <span v-if="record.status === 'acceptance_failed'" class="badge bg-red-100 text-red-600 text-xs">验收未通过</span>
                   <span v-if="record.status === 'acceptance_passed' && !record.depositRefunded" class="badge bg-yellow-100 text-yellow-700 text-xs">押金未退</span>
-                  <span v-if="!hasAnyAbnormal(record)" class="text-gray-400 text-xs">-</span>
+                  <span v-if="!hasAnyAbnormal(record) && !isExpiringSoon(record)" class="text-gray-400 text-xs">-</span>
                 </div>
               </td>
               <td class="text-gray-500 text-sm">{{ record.createTime }}</td>
@@ -215,6 +280,20 @@
                 <div class="flex items-center space-x-2">
                   <button @click.stop="goToDetail(record.id)" class="text-primary-600 hover:text-primary-800 text-sm font-medium">
                     查看详情
+                  </button>
+                  <button 
+                    v-if="canApplyExtension(record)"
+                    @click.stop="openExtensionModal(record)" 
+                    class="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                  >
+                    申请延期
+                  </button>
+                  <button 
+                    v-if="hasExtensionPending(record)"
+                    @click.stop="openExtensionAuditModal(record)" 
+                    class="text-yellow-600 hover:text-yellow-800 text-sm font-medium"
+                  >
+                    审核延期
                   </button>
                   <button 
                     v-if="record.status === 'pending_audit'"
@@ -249,30 +328,333 @@
         </template>
       </EmptyState>
     </div>
+
+    <div v-if="showExtensionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+        <div class="flex items-center justify-between p-4 border-b">
+          <h3 class="text-lg font-semibold text-gray-900">施工延期申请</h3>
+          <button @click="closeExtensionModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div v-if="currentRecord" class="p-4 space-y-4">
+          <div class="bg-blue-50 p-3 rounded-lg text-sm">
+            <p class="text-blue-800"><span class="font-medium">申请编号：</span>{{ currentRecord.id }}</p>
+            <p class="text-blue-800 mt-1"><span class="font-medium">房号：</span>{{ currentRecord.roomNumber }}</p>
+            <p class="text-blue-800 mt-1"><span class="font-medium">原计划完工时间：</span>{{ currentRecord.endDate }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">延期天数 <span class="text-red-500">*</span></label>
+            <input 
+              v-model.number="extensionForm.extensionDays" 
+              type="number" 
+              min="1" 
+              class="input" 
+              placeholder="请输入延期天数"
+            />
+            <p v-if="formErrors.extensionDays" class="text-red-500 text-xs mt-1">{{ formErrors.extensionDays }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">新的计划完工时间 <span class="text-red-500">*</span></label>
+            <input 
+              v-model="extensionForm.newEndDate" 
+              type="date" 
+              class="input" 
+            />
+            <p v-if="formErrors.newEndDate" class="text-red-500 text-xs mt-1">{{ formErrors.newEndDate }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">延期原因 <span class="text-red-500">*</span></label>
+            <textarea 
+              v-model="extensionForm.reason" 
+              rows="4" 
+              class="input resize-none" 
+              placeholder="请详细说明延期原因，便于审核"
+            ></textarea>
+            <p v-if="formErrors.reason" class="text-red-500 text-xs mt-1">{{ formErrors.reason }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">申请人</label>
+            <input 
+              v-model="extensionForm.applicant" 
+              type="text" 
+              class="input" 
+              placeholder="请输入申请人姓名"
+            />
+            <p v-if="formErrors.applicant" class="text-red-500 text-xs mt-1">{{ formErrors.applicant }}</p>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-3 p-4 border-t bg-gray-50">
+          <button @click="closeExtensionModal" class="btn-secondary">取消</button>
+          <button @click="submitExtension" class="btn-primary">提交申请</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showExtensionAuditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-4 border-b">
+          <h3 class="text-lg font-semibold text-gray-900">延期申请审核</h3>
+          <button @click="closeExtensionAuditModal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div v-if="currentRecord && currentPendingExtension" class="p-4 space-y-4">
+          <div class="bg-gray-50 p-3 rounded-lg text-sm space-y-1">
+            <p><span class="font-medium text-gray-600">申请编号：</span>{{ currentRecord.id }}</p>
+            <p><span class="font-medium text-gray-600">房号：</span>{{ currentRecord.roomNumber }}</p>
+            <p><span class="font-medium text-gray-600">业主：</span>{{ currentRecord.ownerName }}</p>
+            <p><span class="font-medium text-gray-600">原计划完工时间：</span>{{ currentRecord.originalEndDate || currentRecord.endDate }}</p>
+          </div>
+
+          <div class="border rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-3">延期申请详情</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex">
+                <span class="text-gray-500 w-28">申请时间：</span>
+                <span>{{ currentPendingExtension.applyTime }}</span>
+              </div>
+              <div class="flex">
+                <span class="text-gray-500 w-28">申请人：</span>
+                <span>{{ currentPendingExtension.applyOperator }}</span>
+              </div>
+              <div class="flex">
+                <span class="text-gray-500 w-28">申请延期天数：</span>
+                <span class="font-medium text-orange-600">{{ currentPendingExtension.extensionDays }} 天</span>
+              </div>
+              <div class="flex">
+                <span class="text-gray-500 w-28">新计划完工时间：</span>
+                <span class="font-medium text-blue-600">{{ currentPendingExtension.newEndDate }}</span>
+              </div>
+              <div class="flex">
+                <span class="text-gray-500 w-28">延期原因：</span>
+                <span class="flex-1">{{ currentPendingExtension.reason }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">审核意见</label>
+            <textarea 
+              v-model="extensionAuditForm.remark" 
+              rows="3" 
+              class="input resize-none" 
+              placeholder="请输入审核意见（选填）"
+            ></textarea>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-3 p-4 border-t bg-gray-50">
+          <button @click="closeExtensionAuditModal" class="btn-secondary">取消</button>
+          <button @click="auditExtension(false)" class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600">
+            驳回申请
+          </button>
+          <button @click="auditExtension(true)" class="btn-primary">
+            通过申请
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, inject, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import dayjs from 'dayjs'
-import { useStore, decorationStatusMap, decorationStatusColorMap } from '../../store'
+import { useStore, decorationStatusMap, decorationStatusColorMap, extensionStatusMap, extensionStatusColorMap } from '../../store'
 import EmptyState from '../../components/EmptyState.vue'
 
 const router = useRouter()
+const route = useRoute()
 const showToast = inject('showToast')
 const store = useStore()
 
-const { todayNewDecorations, pendingAuditDecorations, constructingDecorations, todayPendingInspections } = store
+const { 
+  todayNewDecorations, 
+  pendingAuditDecorations, 
+  constructingDecorations, 
+  todayPendingInspections,
+  todayExpiringDecorations,
+  expiringSoonDecorations,
+  pendingExtensionAudits,
+  overdueDecorations,
+  extendedDecorations
+} = store
 
 const filters = reactive({
   buildingId: '',
   status: '',
   decorationType: '',
   isOverdue: '',
+  extensionStatus: '',
   timeRange: 'all',
   keyword: ''
 })
+
+onMounted(() => {
+  if (route.query.filter) {
+    const f = route.query.filter
+    if (f === 'today_expiring' || f === 'pending_extension' || f === 'overdue' || f === 'expiring_soon') {
+      quickFilter(f)
+    }
+  }
+})
+
+watch(() => route.query.filter, (newVal) => {
+  if (newVal) {
+    quickFilter(newVal)
+  }
+})
+
+const showExtensionModal = ref(false)
+const showExtensionAuditModal = ref(false)
+const currentRecord = ref(null)
+
+const extensionForm = reactive({
+  extensionDays: null,
+  newEndDate: '',
+  reason: '',
+  applicant: ''
+})
+
+const formErrors = reactive({
+  extensionDays: '',
+  newEndDate: '',
+  reason: '',
+  applicant: ''
+})
+
+const extensionAuditForm = reactive({
+  remark: ''
+})
+
+const currentPendingExtension = computed(() => {
+  if (!currentRecord.value || !currentRecord.value.extensionRecords) return null
+  return currentRecord.value.extensionRecords.find(e => e.status === 'pending')
+})
+
+const openExtensionModal = (record) => {
+  currentRecord.value = record
+  extensionForm.extensionDays = null
+  extensionForm.newEndDate = ''
+  extensionForm.reason = ''
+  extensionForm.applicant = record.ownerName || ''
+  formErrors.extensionDays = ''
+  formErrors.newEndDate = ''
+  formErrors.reason = ''
+  formErrors.applicant = ''
+  showExtensionModal.value = true
+}
+
+const closeExtensionModal = () => {
+  showExtensionModal.value = false
+  currentRecord.value = null
+}
+
+const openExtensionAuditModal = (record) => {
+  currentRecord.value = record
+  extensionAuditForm.remark = ''
+  showExtensionAuditModal.value = true
+}
+
+const closeExtensionAuditModal = () => {
+  showExtensionAuditModal.value = false
+  currentRecord.value = null
+}
+
+const validateExtensionForm = () => {
+  let valid = true
+  formErrors.extensionDays = ''
+  formErrors.newEndDate = ''
+  formErrors.reason = ''
+  formErrors.applicant = ''
+
+  if (!extensionForm.extensionDays || extensionForm.extensionDays <= 0) {
+    formErrors.extensionDays = '请输入有效的延期天数（大于0）'
+    valid = false
+  }
+
+  if (!extensionForm.newEndDate) {
+    formErrors.newEndDate = '请选择新的计划完工时间'
+    valid = false
+  } else if (currentRecord.value) {
+    const origEnd = dayjs(currentRecord.value.endDate)
+    const newEnd = dayjs(extensionForm.newEndDate)
+    if (newEnd.isBefore(origEnd) || newEnd.isSame(origEnd, 'day')) {
+      formErrors.newEndDate = '新的完工时间必须晚于原计划完工时间'
+      valid = false
+    }
+    if (extensionForm.extensionDays) {
+      const calcNewEnd = origEnd.add(extensionForm.extensionDays, 'day')
+      if (!newEnd.isSame(calcNewEnd, 'day')) {
+        formErrors.newEndDate = `新的完工时间与延期天数不匹配，应为 ${calcNewEnd.format('YYYY-MM-DD')}`
+        valid = false
+      }
+    }
+  }
+
+  if (!extensionForm.reason || extensionForm.reason.trim().length < 5) {
+    formErrors.reason = '请详细填写延期原因（至少5个字）'
+    valid = false
+  }
+
+  if (!extensionForm.applicant || extensionForm.applicant.trim().length === 0) {
+    formErrors.applicant = '请输入申请人姓名'
+    valid = false
+  }
+
+  return valid
+}
+
+const submitExtension = () => {
+  if (!validateExtensionForm()) {
+    showToast('请检查表单填写是否正确', 'error')
+    return
+  }
+
+  const result = store.submitExtension(currentRecord.value.id, {
+    applicant: extensionForm.applicant,
+    applyRole: 'property',
+    extensionDays: extensionForm.extensionDays,
+    reason: extensionForm.reason,
+    newEndDate: extensionForm.newEndDate
+  })
+
+  if (result) {
+    showToast('延期申请已提交，等待审核', 'success')
+    closeExtensionModal()
+  } else {
+    showToast('提交失败，请重试', 'error')
+  }
+}
+
+const auditExtension = (isApproved) => {
+  if (!currentRecord.value || !currentPendingExtension.value) return
+
+  const operator = '王经理'
+  const result = store.auditExtension(
+    currentRecord.value.id,
+    currentPendingExtension.value.id,
+    operator,
+    isApproved,
+    extensionAuditForm.remark
+  )
+
+  if (result) {
+    showToast(isApproved ? '延期申请已通过' : '延期申请已驳回', 'success')
+    closeExtensionAuditModal()
+  } else {
+    showToast('审核失败，请重试', 'error')
+  }
+}
 
 const filteredRecords = computed(() => {
   return store.state.decorationRecords.filter(record => {
@@ -283,6 +665,13 @@ const filteredRecords = computed(() => {
     if (filters.isOverdue) {
       if (filters.isOverdue === 'yes' && !record.isOverdue) return false
       if (filters.isOverdue === 'no' && record.isOverdue) return false
+    }
+
+    if (filters.extensionStatus) {
+      const exts = record.extensionRecords || []
+      if (filters.extensionStatus === 'pending' && !exts.some(e => e.status === 'pending')) return false
+      if (filters.extensionStatus === 'approved' && !exts.some(e => e.status === 'approved')) return false
+      if (filters.extensionStatus === 'rejected' && !exts.some(e => e.status === 'rejected')) return false
     }
     
     if (filters.timeRange !== 'all') {
@@ -331,6 +720,34 @@ const hasUnrectified = (record) => {
   return record.rectificationRecords.some(r => r.recheckResult !== 'passed')
 }
 
+const hasExtensionPending = (record) => {
+  if (!record.extensionRecords || record.extensionRecords.length === 0) return false
+  return record.extensionRecords.some(e => e.status === 'pending')
+}
+
+const hasExtensionApproved = (record) => {
+  if (!record.extensionRecords || record.extensionRecords.length === 0) return false
+  return record.extensionRecords.some(e => e.status === 'approved')
+}
+
+const canApplyExtension = (record) => {
+  if (!['constructing', 'rectifying'].includes(record.status)) return false
+  if (hasExtensionPending(record)) return false
+  return true
+}
+
+const getDaysRemaining = (record) => {
+  const today = dayjs('2026-06-17')
+  const end = dayjs(record.endDate)
+  return end.diff(today, 'day')
+}
+
+const isExpiringSoon = (record) => {
+  if (!['constructing', 'rectifying'].includes(record.status)) return false
+  const days = getDaysRemaining(record)
+  return days !== null && days >= 0 && days <= 3
+}
+
 const getAbnormalType = (record) => {
   if (record.isOverdue) return '施工逾期'
   if (record.hasViolation) return '有违规'
@@ -359,6 +776,7 @@ const goToDetail = (id) => {
 }
 
 const quickFilter = (type) => {
+  resetFilters()
   if (type === 'today') {
     filters.timeRange = 'today'
   } else if (type === 'pending_audit') {
@@ -367,6 +785,15 @@ const quickFilter = (type) => {
     filters.status = 'constructing'
   } else if (type === 'inspection') {
     filters.status = 'constructing'
+  } else if (type === 'today_expiring') {
+    filters.status = 'constructing'
+    filters.timeRange = 'all'
+  } else if (type === 'expiring_soon') {
+    filters.status = 'constructing'
+  } else if (type === 'pending_extension') {
+    filters.extensionStatus = 'pending'
+  } else if (type === 'overdue') {
+    filters.isOverdue = 'yes'
   }
   showToast('已应用快捷筛选', 'success')
 }
@@ -376,6 +803,7 @@ const resetFilters = () => {
   filters.status = ''
   filters.decorationType = ''
   filters.isOverdue = ''
+  filters.extensionStatus = ''
   filters.timeRange = 'all'
   filters.keyword = ''
   showToast('筛选条件已重置', 'success')

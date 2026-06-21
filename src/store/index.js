@@ -25,7 +25,9 @@ import {
   decorationStatusMap,
   decorationStatusColorMap,
   violationTypes,
-  decorationRecords
+  decorationRecords,
+  extensionStatusMap,
+  extensionStatusColorMap
 } from './mockData'
 
 const today = dayjs('2026-06-17')
@@ -57,6 +59,8 @@ const state = reactive({
   decorationStatusMap: { ...decorationStatusMap },
   decorationStatusColorMap: { ...decorationStatusColorMap },
   violationTypes: [...violationTypes],
+  extensionStatusMap: { ...extensionStatusMap },
+  extensionStatusColorMap: { ...extensionStatusColorMap },
   currentDate: today.format('YYYY-MM-DD')
 })
 
@@ -291,6 +295,46 @@ const getters = {
 
   abnormalDecorations: computed(() => {
     return state.decorationRecords.filter(r => r.hasViolation || r.isOverdue)
+  }),
+
+  todayExpiringDecorations: computed(() => {
+    return state.decorationRecords.filter(r => {
+      if (!['constructing', 'rectifying'].includes(r.status)) return false
+      const endDate = dayjs(r.endDate)
+      const today_ = dayjs('2026-06-17')
+      return endDate.format('YYYY-MM-DD') === today_.format('YYYY-MM-DD')
+    })
+  }),
+
+  expiringSoonDecorations: computed(() => {
+    return state.decorationRecords.filter(r => {
+      if (!['constructing', 'rectifying'].includes(r.status)) return false
+      const endDate = dayjs(r.endDate)
+      const today_ = dayjs('2026-06-17')
+      const diffDays = endDate.diff(today_, 'day')
+      return diffDays > 0 && diffDays <= 3
+    })
+  }),
+
+  pendingExtensionAudits: computed(() => {
+    return state.decorationRecords.filter(r => {
+      if (!r.extensionRecords || r.extensionRecords.length === 0) return false
+      return r.extensionRecords.some(e => e.status === 'pending')
+    })
+  }),
+
+  overdueDecorations: computed(() => {
+    return state.decorationRecords.filter(r => {
+      if (!['constructing', 'rectifying'].includes(r.status)) return false
+      return r.isOverdue
+    })
+  }),
+
+  extendedDecorations: computed(() => {
+    return state.decorationRecords.filter(r => {
+      if (!r.extensionRecords || r.extensionRecords.length === 0) return false
+      return r.extensionRecords.some(e => e.status === 'approved')
+    })
   }),
 
   pendingDepositRefund: computed(() => {
@@ -1297,6 +1341,7 @@ const actions = {
     const newRecord = {
       id: `ZX${todayStr}${String(todayCount).padStart(4, '0')}`,
       ...recordData,
+      originalEndDate: recordData.endDate,
       status: 'pending_audit',
       createTime: nowStr,
       createOperator: recordData.createOperator || '张客服（前台）',
@@ -1313,6 +1358,7 @@ const actions = {
       acceptanceRecord: null,
       isOverdue: false,
       hasViolation: false,
+      extensionRecords: [],
       processLogs: [
         { time: nowStr, operator: recordData.createOperator || '张客服', action: '提交申请', content: `提交装修申请，缴纳押金${recordData.depositAmount}元` }
       ]
@@ -1320,6 +1366,73 @@ const actions = {
     
     state.decorationRecords.unshift(newRecord)
     return newRecord
+  },
+
+  submitExtension(recordId, extensionData) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record) return false
+    if (!['constructing', 'rectifying'].includes(record.status)) return false
+
+    const extensionId = `EXT${Date.now()}`
+    const newExtension = {
+      id: extensionId,
+      applyTime: nowStr,
+      applyOperator: extensionData.applicant,
+      applyRole: extensionData.applyRole || 'owner',
+      extensionDays: extensionData.extensionDays,
+      reason: extensionData.reason,
+      newEndDate: extensionData.newEndDate,
+      status: 'pending',
+      auditTime: null,
+      auditOperator: null,
+      auditResult: null,
+      auditRemark: null
+    }
+
+    if (!record.extensionRecords) {
+      record.extensionRecords = []
+    }
+    record.extensionRecords.push(newExtension)
+
+    record.processLogs.push({
+      time: nowStr,
+      operator: extensionData.applicant,
+      action: '申请延期',
+      content: `申请延期${extensionData.extensionDays}天，原因：${extensionData.reason}，新计划完工时间：${extensionData.newEndDate}`
+    })
+
+    return newExtension
+  },
+
+  auditExtension(recordId, extensionId, operator, isApproved, remark) {
+    const record = state.decorationRecords.find(r => r.id === recordId)
+    if (!record || !record.extensionRecords) return false
+
+    const extension = record.extensionRecords.find(e => e.id === extensionId)
+    if (!extension || extension.status !== 'pending') return false
+
+    extension.auditTime = nowStr
+    extension.auditOperator = operator
+    extension.auditResult = isApproved ? 'approved' : 'rejected'
+    extension.auditRemark = remark || ''
+    extension.status = isApproved ? 'approved' : 'rejected'
+
+    if (isApproved) {
+      record.endDate = extension.newEndDate
+      const today_ = dayjs('2026-06-17')
+      record.isOverdue = dayjs(record.endDate).isBefore(today_)
+    }
+
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: isApproved ? '延期审批通过' : '延期审批驳回',
+      content: isApproved 
+        ? `延期申请已通过，延期${extension.extensionDays}天，新完工时间：${extension.newEndDate}。${remark || ''}`
+        : `延期申请已驳回。${remark || '未说明原因'}`
+    })
+
+    return true
   },
 
   auditDecoration(recordId, operator, isApproved, remark) {
@@ -1663,5 +1776,7 @@ export {
   decorationTypes,
   decorationStatusMap,
   decorationStatusColorMap,
-  violationTypes
+  violationTypes,
+  extensionStatusMap,
+  extensionStatusColorMap
 }

@@ -72,6 +72,22 @@
             押金退还
           </span>
         </button>
+        <button v-if="canApplyExtension()" @click="showExtensionModal = true" class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-color: #7c3aed;">
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            申请延期
+          </span>
+        </button>
+        <button v-if="hasExtensionPending()" @click="showExtensionAuditModal = true" class="btn-warning">
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            审核延期申请
+          </span>
+        </button>
       </div>
     </div>
 
@@ -150,6 +166,12 @@
             <div>
               <label class="text-sm text-gray-500">施工期限</label>
               <p class="font-medium mt-0.5">{{ record.startDate }} 至 {{ record.endDate }}</p>
+              <div v-if="record.originalEndDate && record.originalEndDate !== record.endDate" class="text-xs text-purple-600 mt-1">
+                原计划完工：{{ record.originalEndDate }}（已延期）
+              </div>
+              <div v-if="hasExtensionPending()" class="text-xs text-yellow-600 mt-1">
+                有延期申请待审核
+              </div>
             </div>
             <div>
               <label class="text-sm text-gray-500">押金金额</label>
@@ -375,6 +397,60 @@
             <div class="bg-white p-3 rounded border">
               <p class="text-xs text-gray-500 mb-1">验收意见</p>
               <p class="text-sm text-gray-700">{{ record.acceptanceRecord.remark || '无' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="record.extensionRecords && record.extensionRecords.length > 0" class="card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">延期申请与审批记录 ({{ record.extensionRecords.length }}次)</h2>
+          </div>
+          <div class="space-y-4">
+            <div v-for="ext in record.extensionRecords" :key="ext.id" 
+                 class="border rounded-lg p-4"
+                 :class="ext.status === 'approved' ? 'border-green-200 bg-green-50' : ext.status === 'rejected' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                  <div :class="ext.status === 'approved' ? 'bg-green-500' : ext.status === 'rejected' ? 'bg-red-500' : 'bg-yellow-500'" class="w-8 h-8 rounded-full flex items-center justify-center">
+                    <svg v-if="ext.status === 'approved'" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <svg v-else-if="ext.status === 'rejected'" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <svg v-else class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="font-medium">{{ ext.applyOperator }} · 申请延期</p>
+                    <p class="text-xs text-gray-500">{{ ext.applyTime }}</p>
+                  </div>
+                </div>
+                <span :class="ext.status === 'approved' ? 'bg-green-100 text-green-700' : ext.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'" class="badge text-xs">
+                  {{ ext.status === 'approved' ? '已通过' : ext.status === 'rejected' ? '已驳回' : '待审核' }}
+                </span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div class="bg-white p-3 rounded border">
+                  <p class="text-xs text-gray-500">申请延期天数</p>
+                  <p class="text-sm font-medium mt-0.5">{{ ext.extensionDays }} 天</p>
+                </div>
+                <div class="bg-white p-3 rounded border">
+                  <p class="text-xs text-gray-500">新计划完工时间</p>
+                  <p class="text-sm font-medium mt-0.5">{{ ext.newEndDate }}</p>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded border mb-3">
+                <p class="text-xs text-gray-500">延期原因</p>
+                <p class="text-sm mt-0.5">{{ ext.reason }}</p>
+              </div>
+              <div v-if="ext.auditTime" class="p-3 rounded border" :class="ext.status === 'approved' ? 'bg-green-100 border-green-200' : 'bg-red-100 border-red-200'">
+                <p class="text-xs text-gray-600 mb-1">
+                  {{ ext.status === 'approved' ? '审批通过' : '审批驳回' }} · {{ ext.auditOperator }} · {{ ext.auditTime }}
+                </p>
+                <p v-if="ext.auditRemark" class="text-sm">{{ ext.auditRemark }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -694,6 +770,78 @@
         </div>
       </div>
     </Transition>
+
+    <Transition name="fade">
+      <div v-if="showExtensionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">施工延期申请</h3>
+          <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+            <p class="text-sm"><span class="text-gray-500">申请编号：</span><span class="font-mono font-medium">{{ record.id }}</span></p>
+            <p class="text-sm mt-1"><span class="text-gray-500">房号：</span><span class="font-medium">{{ record.roomNumber }}</span></p>
+            <p class="text-sm mt-1"><span class="text-gray-500">原计划完工时间：</span><span class="font-medium">{{ record.endDate }}</span></p>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">延期天数 <span class="text-red-500">*</span></label>
+              <input v-model.number="extensionForm.extensionDays" type="number" min="1" class="input" placeholder="请输入延期天数" />
+              <p v-if="extensionErrors.extensionDays" class="text-red-500 text-xs mt-1">{{ extensionErrors.extensionDays }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">新的计划完工时间 <span class="text-red-500">*</span></label>
+              <input v-model="extensionForm.newEndDate" type="date" class="input" />
+              <p v-if="extensionErrors.newEndDate" class="text-red-500 text-xs mt-1">{{ extensionErrors.newEndDate }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">延期原因 <span class="text-red-500">*</span></label>
+              <textarea v-model="extensionForm.reason" class="textarea h-24" placeholder="请详细说明延期原因，便于审核"></textarea>
+              <p v-if="extensionErrors.reason" class="text-red-500 text-xs mt-1">{{ extensionErrors.reason }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">申请人 <span class="text-red-500">*</span></label>
+              <input v-model="extensionForm.applicant" type="text" class="input" placeholder="请输入申请人姓名" />
+              <p v-if="extensionErrors.applicant" class="text-red-500 text-xs mt-1">{{ extensionErrors.applicant }}</p>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
+            <button @click="showExtensionModal = false" class="btn-secondary">取消</button>
+            <button @click="submitExtension" class="btn-primary">提交申请</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="showExtensionAuditModal && currentPendingExtension" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">延期申请审核</h3>
+          <div class="mb-4 p-3 bg-gray-50 rounded-lg space-y-1">
+            <p class="text-sm"><span class="text-gray-500">申请编号：</span><span class="font-mono font-medium">{{ record.id }}</span></p>
+            <p class="text-sm"><span class="text-gray-500">房号：</span><span class="font-medium">{{ record.roomNumber }}</span></p>
+            <p class="text-sm"><span class="text-gray-500">业主：</span><span class="font-medium">{{ record.ownerName }}</span></p>
+            <p class="text-sm"><span class="text-gray-500">原计划完工时间：</span><span class="font-medium">{{ record.originalEndDate || record.endDate }}</span></p>
+          </div>
+          <div class="border rounded-lg p-4 mb-4">
+            <h4 class="font-medium text-gray-900 mb-3">延期申请详情</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex"><span class="text-gray-500 w-28">申请时间：</span><span>{{ currentPendingExtension.applyTime }}</span></div>
+              <div class="flex"><span class="text-gray-500 w-28">申请人：</span><span>{{ currentPendingExtension.applyOperator }}</span></div>
+              <div class="flex"><span class="text-gray-500 w-28">申请延期天数：</span><span class="font-medium text-orange-600">{{ currentPendingExtension.extensionDays }} 天</span></div>
+              <div class="flex"><span class="text-gray-500 w-28">新计划完工时间：</span><span class="font-medium text-blue-600">{{ currentPendingExtension.newEndDate }}</span></div>
+              <div class="flex"><span class="text-gray-500 w-28">延期原因：</span><span class="flex-1">{{ currentPendingExtension.reason }}</span></div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">审核意见</label>
+            <textarea v-model="extensionAuditForm.remark" class="textarea h-20" placeholder="请输入审核意见（选填）"></textarea>
+          </div>
+          <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
+            <button @click="showExtensionAuditModal = false" class="btn-secondary">取消</button>
+            <button @click="doAuditExtension(false)" class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600">驳回申请</button>
+            <button @click="doAuditExtension(true)" class="btn-primary">通过申请</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -701,7 +849,7 @@
 import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import dayjs from 'dayjs'
-import { useStore, decorationStatusMap, decorationStatusColorMap, violationTypes } from '../../store'
+import { useStore, decorationStatusMap, decorationStatusColorMap, violationTypes, extensionStatusMap, extensionStatusColorMap } from '../../store'
 
 const router = useRouter()
 const route = useRoute()
@@ -717,8 +865,15 @@ const showSubmitRectModal = ref(false)
 const showRecheckRectModal = ref(false)
 const showAcceptanceModal = ref(false)
 const showRefundModal = ref(false)
+const showExtensionModal = ref(false)
+const showExtensionAuditModal = ref(false)
 
 const currentRectification = ref(null)
+
+const currentPendingExtension = computed(() => {
+  if (!record.value || !record.value.extensionRecords) return null
+  return record.value.extensionRecords.find(e => e.status === 'pending')
+})
 
 const auditForm = reactive({
   result: 'approved',
@@ -803,6 +958,24 @@ const refundErrors = reactive({
   operator: ''
 })
 
+const extensionForm = reactive({
+  extensionDays: null,
+  newEndDate: '',
+  reason: '',
+  applicant: ''
+})
+
+const extensionErrors = reactive({
+  extensionDays: '',
+  newEndDate: '',
+  reason: '',
+  applicant: ''
+})
+
+const extensionAuditForm = reactive({
+  remark: ''
+})
+
 const processSteps = computed(() => {
   if (!record.value) return []
   
@@ -879,6 +1052,7 @@ onMounted(() => {
   record.value = store.getDecorationById(id)
   if (record.value) {
     refundForm.amount = record.value.depositAmount
+    extensionForm.applicant = record.value.ownerName
   }
 })
 
@@ -1248,6 +1422,108 @@ const submitRefund = () => {
     showRefundModal.value = false
   } else {
     showToast('提交失败，请重试', 'error')
+  }
+}
+
+const canApplyExtension = () => {
+  if (!record.value) return false
+  if (!['constructing', 'rectifying'].includes(record.value.status)) return false
+  if (hasExtensionPending()) return false
+  return true
+}
+
+const hasExtensionPending = () => {
+  if (!record.value?.extensionRecords || record.value.extensionRecords.length === 0) return false
+  return record.value.extensionRecords.some(e => e.status === 'pending')
+}
+
+const validateExtensionForm = () => {
+  let valid = true
+  extensionErrors.extensionDays = ''
+  extensionErrors.newEndDate = ''
+  extensionErrors.reason = ''
+  extensionErrors.applicant = ''
+
+  if (!extensionForm.extensionDays || extensionForm.extensionDays <= 0) {
+    extensionErrors.extensionDays = '请输入有效的延期天数（大于0）'
+    valid = false
+  }
+
+  if (!extensionForm.newEndDate) {
+    extensionErrors.newEndDate = '请选择新的计划完工时间'
+    valid = false
+  } else if (record.value) {
+    const origEnd = dayjs(record.value.endDate)
+    const newEnd = dayjs(extensionForm.newEndDate)
+    if (newEnd.isBefore(origEnd) || newEnd.isSame(origEnd, 'day')) {
+      extensionErrors.newEndDate = '新的完工时间必须晚于原计划完工时间'
+      valid = false
+    }
+    if (extensionForm.extensionDays) {
+      const calcNewEnd = origEnd.add(extensionForm.extensionDays, 'day')
+      if (!newEnd.isSame(calcNewEnd, 'day')) {
+        extensionErrors.newEndDate = `新的完工时间与延期天数不匹配，应为 ${calcNewEnd.format('YYYY-MM-DD')}`
+        valid = false
+      }
+    }
+  }
+
+  if (!extensionForm.reason || extensionForm.reason.trim().length < 5) {
+    extensionErrors.reason = '请详细填写延期原因（至少5个字）'
+    valid = false
+  }
+
+  if (!extensionForm.applicant || extensionForm.applicant.trim().length === 0) {
+    extensionErrors.applicant = '请输入申请人姓名'
+    valid = false
+  }
+
+  return valid
+}
+
+const submitExtension = () => {
+  if (!validateExtensionForm()) {
+    showToast('请检查表单填写是否正确', 'error')
+    return
+  }
+
+  const result = store.submitExtension(record.value.id, {
+    applicant: extensionForm.applicant,
+    applyRole: 'property',
+    extensionDays: extensionForm.extensionDays,
+    reason: extensionForm.reason,
+    newEndDate: extensionForm.newEndDate
+  })
+
+  if (result) {
+    showToast('延期申请已提交，等待审核', 'success')
+    showExtensionModal.value = false
+    extensionForm.extensionDays = null
+    extensionForm.newEndDate = ''
+    extensionForm.reason = ''
+  } else {
+    showToast('提交失败，请重试', 'error')
+  }
+}
+
+const doAuditExtension = (isApproved) => {
+  if (!record.value || !currentPendingExtension.value) return
+
+  const operator = '王经理'
+  const result = store.auditExtension(
+    record.value.id,
+    currentPendingExtension.value.id,
+    operator,
+    isApproved,
+    extensionAuditForm.remark
+  )
+
+  if (result) {
+    showToast(isApproved ? '延期申请已通过' : '延期申请已驳回', 'success')
+    showExtensionAuditModal.value = false
+    extensionAuditForm.remark = ''
+  } else {
+    showToast('审核失败，请重试', 'error')
   }
 }
 </script>

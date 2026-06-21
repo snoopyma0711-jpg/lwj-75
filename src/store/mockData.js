@@ -1685,6 +1685,18 @@ export const violationTypes = [
   { value: 'other', label: '其他违规' }
 ]
 
+export const extensionStatusMap = {
+  pending: '待审核',
+  approved: '已通过',
+  rejected: '已驳回'
+}
+
+export const extensionStatusColorMap = {
+  pending: 'bg-yellow-100 text-yellow-700',
+  approved: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700'
+}
+
 const generateDecorationRecords = () => {
   const records = []
   const ownerNames = ['张伟', '李娜', '王芳', '刘洋', '陈静', '杨帆', '赵磊', '黄敏', '周杰', '吴婷', '徐强', '孙丽']
@@ -1702,6 +1714,7 @@ const generateDecorationRecords = () => {
     decorationType: 'full',
     startDate: today.format('YYYY-MM-DD'),
     endDate: addDays(today, 60),
+    originalEndDate: addDays(today, 60),
     constructionCompany: '阳光装饰工程有限公司',
     constructionLicense: 'JY20251234',
     foremanName: '李工',
@@ -1737,6 +1750,7 @@ const generateDecorationRecords = () => {
     acceptanceRecord: null,
     isOverdue: false,
     hasViolation: false,
+    extensionRecords: [],
     processLogs: [
       { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:30:00', operator: '王女士', action: '提交申请', content: '业主通过APP提交装修申请，缴纳押金5000元' }
     ]
@@ -1751,6 +1765,7 @@ const generateDecorationRecords = () => {
     decorationType: 'partial',
     startDate: today.format('YYYY-MM-DD'),
     endDate: addDays(today, 15),
+    originalEndDate: addDays(today, 15),
     constructionCompany: '宜家装修设计公司',
     constructionLicense: 'JY20255678',
     foremanName: '王师傅',
@@ -1786,6 +1801,7 @@ const generateDecorationRecords = () => {
     acceptanceRecord: null,
     isOverdue: false,
     hasViolation: false,
+    extensionRecords: [],
     processLogs: [
       { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:20:00', operator: '李先生', action: '提交申请', content: '业主提交卫生间改造装修申请，缴纳押金3000元' }
     ]
@@ -1799,7 +1815,8 @@ const generateDecorationRecords = () => {
     ownerPhone: '136****3333',
     decorationType: 'wall_floor',
     startDate: today.subtract(5, 'day').format('YYYY-MM-DD'),
-    endDate: addDays(today.subtract(5, 'day'), 10),
+    endDate: today.format('YYYY-MM-DD'),
+    originalEndDate: today.format('YYYY-MM-DD'),
     constructionCompany: '尚品装饰工程队',
     constructionLicense: 'JY20259012',
     foremanName: '张工头',
@@ -1846,11 +1863,28 @@ const generateDecorationRecords = () => {
     acceptanceRecord: null,
     isOverdue: false,
     hasViolation: false,
+    extensionRecords: [
+      {
+        id: 'EXT001',
+        applyTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:00:00',
+        applyOperator: '张阿姨',
+        applyRole: 'owner',
+        extensionDays: 5,
+        reason: '定制的木地板和墙漆到货延迟，预计还要5天才能完成安装和晾干',
+        newEndDate: addDays(today, 5),
+        status: 'pending',
+        auditTime: null,
+        auditOperator: null,
+        auditResult: null,
+        auditRemark: null
+      }
+    ],
     processLogs: [
       { time: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 09:15:00', operator: '张阿姨', action: '提交申请', content: '业主提交客厅装修申请，缴纳押金2000元' },
       { time: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '张客服', action: '审核通过', content: '材料齐全，装修方案合理，审核通过' },
       { time: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 08:00:00', operator: '楼栋管家-小赵', action: '施工进场', content: '施工人员和材料进场，已做好公共区域保护' },
-      { time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 10:30:00', operator: '楼栋管家-小赵', action: '日常巡查', content: '施工正常，无违规' }
+      { time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 10:30:00', operator: '楼栋管家-小赵', action: '日常巡查', content: '施工正常，无违规' },
+      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:00:00', operator: '张阿姨', action: '申请延期', content: '申请延期5天，原因：定制的木地板和墙漆到货延迟，预计还要5天才能完成安装和晾干，新计划完工时间：' + addDays(today, 5) }
     ]
   })
 
@@ -1862,7 +1896,8 @@ const generateDecorationRecords = () => {
     ownerPhone: '137****4444',
     decorationType: 'water_electric',
     startDate: today.subtract(10, 'day').format('YYYY-MM-DD'),
-    endDate: addDays(today.subtract(10, 'day'), 7),
+    endDate: addDays(today, 3),
+    originalEndDate: addDays(today.subtract(10, 'day'), 7),
     constructionCompany: '雅居装修有限公司',
     constructionLicense: 'JY20253456',
     foremanName: '刘队长',
@@ -1931,15 +1966,33 @@ const generateDecorationRecords = () => {
       }
     ],
     acceptanceRecord: null,
-    isOverdue: true,
+    isOverdue: false,
     hasViolation: true,
+    extensionRecords: [
+      {
+        id: 'EXT002',
+        applyTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        applyOperator: '赵先生',
+        applyRole: 'owner',
+        extensionDays: 10,
+        reason: '因施工期间发现违规问题需整改，原有水电线路也需要额外调整，无法按期完成',
+        newEndDate: addDays(today, 3),
+        status: 'approved',
+        auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 09:00:00',
+        auditOperator: '王经理',
+        auditResult: 'approved',
+        auditRemark: '情况属实，考虑到整改需要时间，同意延期10天'
+      }
+    ],
     processLogs: [
       { time: today.subtract(12, 'day').format('YYYY-MM-DD') + ' 11:00:00', operator: '赵先生', action: '提交申请', content: '业主提交水电改造申请，缴纳押金1500元' },
       { time: today.subtract(11, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '李客服', action: '审核通过', content: '审核通过' },
       { time: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 08:30:00', operator: '楼栋管家-小钱', action: '施工进场', content: '施工人员进场' },
       { time: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '楼栋管家-小钱', action: '发现违规', content: '发现超时施工和垃圾乱堆问题，已发放整改通知书' },
       { time: today.subtract(6, 'day').format('YYYY-MM-DD') + ' 16:00:00', operator: '刘队长', action: '提交整改', content: '已清理楼道垃圾' },
-      { time: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '楼栋管家-小钱', action: '整改复查', content: '垃圾已清理，但超时施工问题未解决，整改不通过，需继续整改' }
+      { time: today.subtract(5, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '楼栋管家-小钱', action: '整改复查', content: '垃圾已清理，但超时施工问题未解决，整改不通过，需继续整改' },
+      { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '赵先生', action: '申请延期', content: '申请延期10天，原因：因施工期间发现违规问题需整改，原有水电线路也需要额外调整，无法按期完成，新计划完工时间：' + addDays(today, 3) },
+      { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 09:00:00', operator: '王经理', action: '延期审批通过', content: '延期申请已通过，延期10天，新完工时间：' + addDays(today, 3) + '。情况属实，考虑到整改需要时间，同意延期10天' }
     ]
   })
 
@@ -2290,8 +2343,9 @@ const generateDecorationRecords = () => {
     ownerName: '孙先生',
     ownerPhone: '138****1212',
     decorationType: 'refurbish',
-    startDate: today.subtract(20, 'day').format('YYYY-MM-DD'),
-    endDate: addDays(today.subtract(20, 'day'), 25),
+    startDate: today.subtract(30, 'day').format('YYYY-MM-DD'),
+    endDate: today.subtract(7, 'day').format('YYYY-MM-DD'),
+    originalEndDate: today.subtract(7, 'day').format('YYYY-MM-DD'),
     constructionCompany: '宜家装修设计公司',
     constructionLicense: 'JY20255679',
     foremanName: '王师傅',
@@ -2299,7 +2353,7 @@ const generateDecorationRecords = () => {
     workerCount: 6,
     depositAmount: 5000,
     depositPaid: true,
-    depositPaidDate: today.subtract(22, 'day').format('YYYY-MM-DD'),
+    depositPaidDate: today.subtract(32, 'day').format('YYYY-MM-DD'),
     depositRefunded: false,
     depositRefundAmount: null,
     depositRefundDate: null,
@@ -2312,20 +2366,20 @@ const generateDecorationRecords = () => {
     decorationContent: '全屋翻新改造',
     specialRequirements: '',
     status: 'constructing',
-    createTime: today.subtract(22, 'day').format('YYYY-MM-DD') + ' 11:00:00',
+    createTime: today.subtract(32, 'day').format('YYYY-MM-DD') + ' 11:00:00',
     createOperator: '孙先生（业主APP）',
-    auditTime: today.subtract(21, 'day').format('YYYY-MM-DD') + ' 09:00:00',
+    auditTime: today.subtract(31, 'day').format('YYYY-MM-DD') + ' 09:00:00',
     auditOperator: '张客服',
     auditResult: 'approved',
     auditRemark: '审核通过',
-    enterTime: today.subtract(20, 'day').format('YYYY-MM-DD') + ' 08:00:00',
+    enterTime: today.subtract(30, 'day').format('YYYY-MM-DD') + ' 08:00:00',
     enterOperator: '楼栋管家-小钱',
     exitTime: null,
     exitOperator: null,
     inspectionRecords: [
       {
         id: 'INSP011',
-        time: today.subtract(15, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+        time: today.subtract(20, 'day').format('YYYY-MM-DD') + ' 10:00:00',
         inspector: '楼栋管家-小钱',
         content: '日常巡查，施工正常',
         hasViolation: false,
@@ -2335,7 +2389,7 @@ const generateDecorationRecords = () => {
       },
       {
         id: 'INSP012',
-        time: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 14:30:00',
+        time: today.subtract(10, 'day').format('YYYY-MM-DD') + ' 14:30:00',
         inspector: '楼栋管家-小钱',
         content: '日常巡查，施工正常',
         hasViolation: false,
@@ -2348,10 +2402,43 @@ const generateDecorationRecords = () => {
     acceptanceRecord: null,
     isOverdue: true,
     hasViolation: false,
+    extensionRecords: [
+      {
+        id: 'EXT003',
+        applyTime: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 15:00:00',
+        applyOperator: '孙先生',
+        applyRole: 'owner',
+        extensionDays: 3,
+        reason: '有些收尾工作没做完',
+        newEndDate: today.subtract(4, 'day').format('YYYY-MM-DD'),
+        status: 'rejected',
+        auditTime: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 09:30:00',
+        auditOperator: '王经理',
+        auditResult: 'rejected',
+        auditRemark: '延期原因过于笼统，延期时间过短，请详细说明实际情况并合理申请延期天数'
+      },
+      {
+        id: 'EXT004',
+        applyTime: today.format('YYYY-MM-DD') + ' 09:00:00',
+        applyOperator: '孙先生',
+        applyRole: 'owner',
+        extensionDays: 15,
+        reason: '因定制的橱柜、衣柜等家具生产周期延长，加上前期梅雨天气导致墙面腻子干透慢，需要额外的时间进行安装和后续收尾工作，预计还需15天才能全部完工',
+        newEndDate: addDays(today, 8),
+        status: 'pending',
+        auditTime: null,
+        auditOperator: null,
+        auditResult: null,
+        auditRemark: null
+      }
+    ],
     processLogs: [
-      { time: today.subtract(22, 'day').format('YYYY-MM-DD') + ' 11:00:00', operator: '孙先生', action: '提交申请', content: '业主提交全屋翻新申请，缴纳押金5000元' },
-      { time: today.subtract(21, 'day').format('YYYY-MM-DD') + ' 09:00:00', operator: '张客服', action: '审核通过', content: '审核通过' },
-      { time: today.subtract(20, 'day').format('YYYY-MM-DD') + ' 08:00:00', operator: '楼栋管家-小钱', action: '施工进场', content: '施工人员进场' }
+      { time: today.subtract(32, 'day').format('YYYY-MM-DD') + ' 11:00:00', operator: '孙先生', action: '提交申请', content: '业主提交全屋翻新申请，缴纳押金5000元' },
+      { time: today.subtract(31, 'day').format('YYYY-MM-DD') + ' 09:00:00', operator: '张客服', action: '审核通过', content: '审核通过' },
+      { time: today.subtract(30, 'day').format('YYYY-MM-DD') + ' 08:00:00', operator: '楼栋管家-小钱', action: '施工进场', content: '施工人员进场' },
+      { time: today.subtract(8, 'day').format('YYYY-MM-DD') + ' 15:00:00', operator: '孙先生', action: '申请延期', content: '申请延期3天，原因：有些收尾工作没做完，新计划完工时间：' + today.subtract(4, 'day').format('YYYY-MM-DD') },
+      { time: today.subtract(7, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '王经理', action: '延期审批驳回', content: '延期申请已驳回。延期原因过于笼统，延期时间过短，请详细说明实际情况并合理申请延期天数' },
+      { time: today.format('YYYY-MM-DD') + ' 09:00:00', operator: '孙先生', action: '申请延期', content: '申请延期15天，原因：因定制的橱柜、衣柜等家具生产周期延长，加上前期梅雨天气导致墙面腻子干透慢，需要额外的时间进行安装和后续收尾工作，预计还需15天才能全部完工，新计划完工时间：' + addDays(today, 8) }
     ]
   })
 
