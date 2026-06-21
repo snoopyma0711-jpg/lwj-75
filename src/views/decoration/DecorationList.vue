@@ -30,7 +30,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-blue-600 font-medium">今日新申请</p>
-            <p class="text-3xl font-bold text-blue-700 mt-2">{{ store.todayNewDecorations.length }}</p>
+            <p class="text-3xl font-bold text-blue-700 mt-2">{{ todayNewDecorations.length }}</p>
           </div>
           <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +44,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-yellow-600 font-medium">待审核</p>
-            <p class="text-3xl font-bold text-yellow-700 mt-2">{{ store.pendingAuditDecorations.length }}</p>
+            <p class="text-3xl font-bold text-yellow-700 mt-2">{{ pendingAuditDecorations.length }}</p>
           </div>
           <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +58,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-green-600 font-medium">施工中</p>
-            <p class="text-3xl font-bold text-green-700 mt-2">{{ store.constructingDecorations.length }}</p>
+            <p class="text-3xl font-bold text-green-700 mt-2">{{ constructingDecorations.length }}</p>
           </div>
           <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,7 +72,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-red-600 font-medium">今日待巡查</p>
-            <p class="text-3xl font-bold text-red-700 mt-2">{{ store.todayPendingInspections.length }}</p>
+            <p class="text-3xl font-bold text-red-700 mt-2">{{ todayPendingInspections.length }}</p>
           </div>
           <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,6 +262,8 @@ import EmptyState from '../../components/EmptyState.vue'
 const router = useRouter()
 const showToast = inject('showToast')
 const store = useStore()
+
+const { todayNewDecorations, pendingAuditDecorations, constructingDecorations, todayPendingInspections } = store
 
 const filters = reactive({
   buildingId: '',
