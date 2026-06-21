@@ -8,10 +8,19 @@
           </svg>
         </router-link>
         <div>
-          <div class="flex items-center space-x-3">
+          <div class="flex flex-wrap items-center gap-2">
             <h1 class="text-2xl font-bold text-gray-900">访客预约详情</h1>
             <span class="badge" :class="visitorStatusColorMap[record.status]">
               {{ visitorStatusMap[record.status] }}
+            </span>
+            <span v-if="record.temporaryReleaseId" class="badge bg-yellow-100 text-yellow-700">
+              临时放行
+            </span>
+            <span v-if="blacklistInfo && blacklistInfo.status === 'active'" class="badge bg-red-100 text-red-700">
+              ⚠️ 黑名单中
+            </span>
+            <span v-else-if="blacklistInfo && blacklistInfo.status === 'removed'" class="badge bg-gray-100 text-gray-500">
+              曾被拉黑
             </span>
           </div>
           <p class="text-sm text-gray-500 mt-1">
@@ -76,6 +85,14 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
             取消预约
+          </span>
+        </button>
+        <button v-if="canAddToBlacklist" @click="openAddBlacklistModal" class="btn-danger btn-sm">
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            加入黑名单
           </span>
         </button>
       </div>
@@ -296,6 +313,50 @@
           </div>
         </div>
 
+        <div v-if="blacklistInfo" class="card p-6" :class="blacklistInfo.status === 'active' ? 'bg-red-50 border-2 border-red-200' : 'bg-gray-50'">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b flex items-center">
+            <svg class="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            黑名单信息
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-500">黑名单编号</span>
+              <span class="font-mono font-medium text-red-600">{{ blacklistInfo.id }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-500">当前状态</span>
+              <span class="badge" :class="blacklistStatusColorMap[blacklistInfo.status]">
+                {{ blacklistStatusMap[blacklistInfo.status] }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-500">列入原因</span>
+              <span class="badge bg-red-100 text-red-700">{{ getReasonLabel(blacklistInfo.reason) }}</span>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500 mb-1">详情说明</p>
+              <p class="text-sm text-gray-700 bg-white p-2 rounded border">{{ blacklistInfo.reasonDetail }}</p>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-500">列入时间</span>
+              <span class="text-gray-900">{{ blacklistInfo.createTime }}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-500">操作人</span>
+              <span class="text-gray-900">{{ blacklistInfo.createOperator }}</span>
+            </div>
+            <div v-if="blacklistInfo.complaintCount > 0" class="flex items-center justify-between text-sm">
+              <span class="text-gray-500">投诉次数</span>
+              <span class="text-red-600 font-medium">{{ blacklistInfo.complaintCount }} 次</span>
+            </div>
+            <button @click="goToBlacklistDetail" class="w-full btn-primary btn-sm mt-2">
+              查看黑名单详情
+            </button>
+          </div>
+        </div>
+
         <div class="card p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">快速操作</h3>
           <div class="space-y-3">
@@ -311,6 +372,18 @@
                 补充备注
               </span>
             </button>
+            <router-link 
+              v-if="blacklistInfo && blacklistInfo.status === 'active'"
+              :to="`/blacklist/${blacklistInfo.id}`"
+              class="w-full btn-warning btn-sm flex items-center justify-center"
+            >
+              <span class="flex items-center justify-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                申请临时放行
+              </span>
+            </router-link>
           </div>
         </div>
       </div>
@@ -453,6 +526,65 @@
         </div>
       </div>
     </Transition>
+
+    <Transition name="fade">
+      <div v-if="showAddBlacklistModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            将访客加入黑名单
+          </h3>
+          <div v-if="record" class="mb-4 p-3 bg-red-50 rounded-lg border border-red-100">
+            <p class="text-sm"><span class="text-gray-500">预约号：</span><span class="font-mono font-medium">{{ record.id }}</span></p>
+            <p class="text-sm mt-1"><span class="text-gray-500">访客：</span><span class="font-medium">{{ record.visitorName }} · {{ record.visitorPhone }}</span></p>
+            <p class="text-sm mt-1"><span class="text-gray-500">历史被拒次数：</span><span class="font-medium text-red-600">{{ addBlacklistForm.rejectionCount }} 次</span></p>
+          </div>
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">列入原因 <span class="text-red-500">*</span></label>
+                <select v-model="addBlacklistForm.reason" class="select">
+                  <option value="">请选择列入原因</option>
+                  <option v-for="r in blacklistReasons" :key="r.value" :value="r.value">{{ r.label }} - {{ r.description }}</option>
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">原因详情 <span class="text-red-500">*</span></label>
+                <textarea v-model="addBlacklistForm.reasonDetail" class="textarea h-24" placeholder="请详细描述列入黑名单的原因..."></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">信息来源</label>
+                <select v-model="addBlacklistForm.reportSource" class="select">
+                  <option value="手动录入">手动录入</option>
+                  <option value="业主投诉">业主投诉</option>
+                  <option value="安保发现">安保发现</option>
+                  <option value="系统分析">系统分析</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">投诉次数</label>
+                <input v-model.number="addBlacklistForm.complaintCount" type="number" min="0" class="input" placeholder="0" />
+              </div>
+            </div>
+            <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p class="text-sm text-yellow-800 flex items-start">
+                <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                列入黑名单后，该访客再次预约时将被系统自动拦截，需要特殊审批才能放行。请谨慎操作。
+              </p>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+            <button @click="showAddBlacklistModal = false" class="btn-secondary">取消</button>
+            <button @click="submitAddBlacklist" class="btn-danger">确认加入黑名单</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 
   <EmptyState v-else title="未找到预约记录" description="该预约可能已被删除或编号错误">
@@ -465,7 +597,7 @@
 <script setup>
 import { ref, reactive, computed, inject } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useStore, visitorPurposes, visitorStatusMap, visitorStatusColorMap } from '../../store'
+import { useStore, visitorPurposes, visitorStatusMap, visitorStatusColorMap, blacklistReasons, blacklistStatusMap, blacklistStatusColorMap } from '../../store'
 import EmptyState from '../../components/EmptyState.vue'
 import { h } from 'vue'
 
@@ -548,8 +680,85 @@ const blockedReasons = computed(() => {
     reasons.push('该预约尚未审核，需要先通过审核才能放行')
   }
   
+  if (blacklistInfo.value && blacklistInfo.value.status === 'active' && !record.value.temporaryReleaseId) {
+    reasons.push('该访客已被列入黑名单，需要临时放行审批才能进入')
+  }
+  
   return reasons
 })
+
+const blacklistInfo = computed(() => {
+  if (!record.value) return null
+  return store.checkBlacklist(record.value.visitorPhone, record.value.idCard)
+})
+
+const canAddToBlacklist = computed(() => {
+  if (!record.value) return false
+  return !blacklistInfo.value && ['service', 'housekeeper', 'security'].includes(currentRole.value)
+})
+
+const showAddBlacklistModal = ref(false)
+const addBlacklistForm = reactive({
+  reason: '',
+  reasonDetail: '',
+  reportSource: '手动录入',
+  complaintCount: 0,
+  rejectionCount: 0
+})
+
+const openAddBlacklistModal = () => {
+  if (!record.value) return
+  addBlacklistForm.reason = ''
+  addBlacklistForm.reasonDetail = ''
+  addBlacklistForm.reportSource = '手动录入'
+  addBlacklistForm.complaintCount = 0
+  addBlacklistForm.rejectionCount = store.getVisitorRejectionCount(record.value.visitorPhone)
+  showAddBlacklistModal.value = true
+}
+
+const submitAddBlacklist = () => {
+  if (!addBlacklistForm.reason) {
+    showToast('请选择列入原因', 'error')
+    return
+  }
+  if (!addBlacklistForm.reasonDetail.trim()) {
+    showToast('请填写原因详情', 'error')
+    return
+  }
+  if (!record.value) return
+
+  const operator = getOperatorName()
+  const result = store.addToBlacklist({
+    visitorName: record.value.visitorName,
+    visitorPhone: record.value.visitorPhone,
+    idCard: record.value.idCard || '',
+    reason: addBlacklistForm.reason,
+    reasonDetail: addBlacklistForm.reasonDetail,
+    reportSource: addBlacklistForm.reportSource,
+    complainant: '',
+    complaintCount: addBlacklistForm.complaintCount,
+    relatedVisitorIds: [record.value.id],
+    operator
+  })
+
+  if (result) {
+    showToast('已成功加入黑名单', 'success')
+    showAddBlacklistModal.value = false
+  } else {
+    showToast('操作失败，请重试', 'error')
+  }
+}
+
+const goToBlacklistDetail = () => {
+  if (blacklistInfo.value) {
+    router.push(`/blacklist/${blacklistInfo.value.id}`)
+  }
+}
+
+const getReasonLabel = (value) => {
+  const r = blacklistReasons.find(r => r.value === value)
+  return r ? r.label : value
+}
 
 const sortedLogs = computed(() => {
   if (!record.value) return []

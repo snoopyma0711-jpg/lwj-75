@@ -29,6 +29,81 @@
       </div>
     </div>
 
+    <div v-if="blacklistCheck.blocked" class="card p-6 bg-red-50 border-2 border-red-200">
+      <div class="flex items-start space-x-4">
+        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-red-800 mb-2">⚠️ 访客黑名单拦截警告</h3>
+          <div class="space-y-2 text-sm text-red-700">
+            <p>
+              <span class="font-medium">访客姓名：</span>{{ blacklistCheck.record.visitorName }}
+              <span class="mx-2">·</span>
+              <span class="font-medium">电话：</span>{{ blacklistCheck.record.visitorPhone }}
+            </p>
+            <p>
+              <span class="font-medium">黑名单编号：</span><span class="font-mono">{{ blacklistCheck.record.id }}</span>
+              <span class="mx-2">·</span>
+              <span class="font-medium">列入原因：</span><span class="badge bg-red-100 text-red-700">{{ getReasonLabel(blacklistCheck.record.reason) }}</span>
+            </p>
+            <p v-if="blacklistCheck.record.reasonDetail" class="pt-1">{{ blacklistCheck.record.reasonDetail }}</p>
+            <div class="mt-3 p-3 bg-white rounded-lg border border-red-100">
+              <p class="text-xs text-red-600 mb-2 font-medium">可用处理方式：</p>
+              <ul class="text-xs space-y-1">
+                <li>1. 立即取消预约，告知访客已被列入黑名单</li>
+                <li>2. 如有特殊情况，需先办理临时放行审批</li>
+              </ul>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button @click="goToBlacklistDetail" class="btn-primary btn-sm">
+                  查看黑名单详情
+                </button>
+                <button @click="clearForm" class="btn-secondary btn-sm">
+                  重新录入
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="blacklistCheck.hasTemporaryRelease" class="card p-6 bg-yellow-50 border-2 border-yellow-200">
+      <div class="flex items-start space-x-4">
+        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-yellow-800 mb-2">⚠️ 该访客已被临时放行</h3>
+          <div class="space-y-2 text-sm text-yellow-700">
+            <p>
+              <span class="font-medium">黑名单编号：</span><span class="font-mono">{{ blacklistCheck.record.id }}</span>
+              <span class="mx-2">·</span>
+              <span class="font-medium">列入原因：</span>{{ getReasonLabel(blacklistCheck.record.reason) }}
+            </p>
+            <p>
+              <span class="font-medium">审批人：</span>{{ blacklistCheck.temporaryRelease.approvedBy }}
+              <span class="mx-2">·</span>
+              <span class="font-medium">审批时间：</span>{{ blacklistCheck.temporaryRelease.approveTime }}
+            </p>
+            <p>
+              <span class="font-medium">有效期至：</span>{{ blacklistCheck.temporaryRelease.expireTime }}
+            </p>
+            <p class="pt-1 text-xs">
+              <span class="font-medium">审批原因：</span>{{ blacklistCheck.temporaryRelease.approveReason }}
+            </p>
+            <div class="mt-2 p-2 bg-yellow-100 rounded text-xs">
+              💡 提示：本次预约将使用该临时放行记录，使用后将自动标记为已使用
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card p-6">
       <form @submit.prevent="handleSubmit">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -359,10 +434,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, inject, onMounted } from 'vue'
+import { ref, reactive, computed, inject, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import dayjs from 'dayjs'
-import { useStore, visitorPurposes, visitorStatusMap, visitorStatusColorMap } from '../../store'
+import { useStore, visitorPurposes, visitorStatusMap, visitorStatusColorMap, blacklistReasons } from '../../store'
 
 const router = useRouter()
 const route = useRoute()
@@ -391,6 +466,83 @@ const form = reactive({
 })
 
 const errors = reactive({})
+
+const blacklistCheck = reactive({
+  blocked: false,
+  hasTemporaryRelease: false,
+  record: null,
+  temporaryRelease: null,
+  checked: false
+})
+
+watch(() => form.visitorPhone, (newVal) => {
+  if (newVal && newVal.length >= 11) {
+    performBlacklistCheck()
+  } else {
+    resetBlacklistCheck()
+  }
+})
+
+watch(() => form.idCard, (newVal) => {
+  if (newVal && newVal.length >= 15) {
+    performBlacklistCheck()
+  }
+})
+
+const getReasonLabel = (value) => {
+  const r = blacklistReasons.find(r => r.value === value)
+  return r ? r.label : value
+}
+
+const performBlacklistCheck = () => {
+  if (!form.visitorPhone && !form.idCard) {
+    return
+  }
+
+  const blacklist = store.checkBlacklist(form.visitorPhone, form.idCard)
+  if (blacklist) {
+    blacklistCheck.record = blacklist
+    blacklistCheck.checked = true
+
+    if (form.visitTime) {
+      const tempRelease = store.checkTemporaryRelease(form.visitorPhone, form.visitTime.replace('T', ' '))
+      if (tempRelease) {
+        blacklistCheck.blocked = false
+        blacklistCheck.hasTemporaryRelease = true
+        blacklistCheck.temporaryRelease = tempRelease
+        return
+      }
+    }
+
+    blacklistCheck.blocked = true
+    blacklistCheck.hasTemporaryRelease = false
+    blacklistCheck.temporaryRelease = null
+    showToast('该访客已被列入黑名单，无法正常预约', 'error')
+  } else {
+    resetBlacklistCheck()
+  }
+}
+
+const resetBlacklistCheck = () => {
+  blacklistCheck.blocked = false
+  blacklistCheck.hasTemporaryRelease = false
+  blacklistCheck.record = null
+  blacklistCheck.temporaryRelease = null
+  blacklistCheck.checked = false
+}
+
+const goToBlacklistDetail = () => {
+  if (blacklistCheck.record) {
+    router.push(`/blacklist/${blacklistCheck.record.id}`)
+  }
+}
+
+const clearForm = () => {
+  form.visitorName = ''
+  form.visitorPhone = ''
+  form.idCard = ''
+  resetBlacklistCheck()
+}
 
 onMounted(() => {
   if (isEdit.value) {
@@ -433,6 +585,12 @@ const onBuildingChange = () => {
   }
 }
 
+watch(() => form.visitTime, () => {
+  if (blacklistCheck.checked && blacklistCheck.record) {
+    performBlacklistCheck()
+  }
+})
+
 const clearError = (field) => {
   if (errors[field]) {
     delete errors[field]
@@ -468,6 +626,13 @@ const handleSubmit = () => {
     return
   }
 
+  performBlacklistCheck()
+
+  if (blacklistCheck.blocked) {
+    showToast('该访客已被列入黑名单，无法直接预约，请先办理临时放行审批', 'error')
+    return
+  }
+
   const submitData = {
     visitorName: form.visitorName.trim(),
     visitorPhone: form.visitorPhone.trim(),
@@ -486,12 +651,21 @@ const handleSubmit = () => {
     createOperator: getOperatorName()
   }
 
+  if (blacklistCheck.hasTemporaryRelease && blacklistCheck.temporaryRelease) {
+    submitData.temporaryReleaseId = blacklistCheck.temporaryRelease.id
+    submitData.remark = (submitData.remark ? submitData.remark + '；' : '') +
+      `使用临时放行：${blacklistCheck.temporaryRelease.id}，审批人：${blacklistCheck.temporaryRelease.approvedBy}`
+  }
+
   if (isEdit.value) {
     const result = store.updateVisitorRecord(route.query.id, {
       ...submitData,
       updateOperator: getOperatorName()
     })
     if (result) {
+      if (blacklistCheck.hasTemporaryRelease && blacklistCheck.temporaryRelease) {
+        store.markTemporaryReleaseUsed(blacklistCheck.temporaryRelease.id, route.query.id)
+      }
       showToast('修改成功', 'success')
       router.push(`/visitor/${route.query.id}`)
     } else {
@@ -500,7 +674,14 @@ const handleSubmit = () => {
   } else {
     const newRecord = store.createVisitorRecord(submitData)
     if (newRecord) {
-      showToast('预约提交成功，待审核', 'success')
+      if (blacklistCheck.hasTemporaryRelease && blacklistCheck.temporaryRelease) {
+        store.markTemporaryReleaseUsed(blacklistCheck.temporaryRelease.id, newRecord.id)
+      }
+      if (blacklistCheck.hasTemporaryRelease) {
+        showToast('预约提交成功，已使用临时放行审批', 'success')
+      } else {
+        showToast('预约提交成功，待审核', 'success')
+      }
       router.push(`/visitor/${newRecord.id}`)
     } else {
       showToast('提交失败，请重试', 'error')

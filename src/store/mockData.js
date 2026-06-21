@@ -1424,4 +1424,176 @@ const generateInspectionTasks = () => {
 
 export const inspectionRecords = generateInspectionTasks()
 
+export const blacklistReasons = [
+  { value: 'complaint', label: '业主投诉', description: '访客行为不当，被业主投诉' },
+  { value: 'identity_fraud', label: '冒用身份', description: '使用他人身份证或虚假身份信息' },
+  { value: 'multiple_rejections', label: '多次被拒', description: '预约多次被拒绝，存在可疑行为' },
+  { value: 'suspicious_behavior', label: '可疑行为', description: '有偷盗、闹事等可疑行为记录' },
+  { value: 'violence', label: '暴力行为', description: '有暴力倾向或曾发生冲突' },
+  { value: 'trespass', label: '擅闯小区', description: '未登记强行进入小区' },
+  { value: 'other', label: '其他原因', description: '其他需要列入黑名单的情况' }
+]
+
+export const blacklistStatusMap = {
+  active: '黑名单中',
+  released: '临时放开',
+  removed: '已移出'
+}
+
+export const blacklistStatusColorMap = {
+  active: 'bg-red-100 text-red-700',
+  released: 'bg-yellow-100 text-yellow-700',
+  removed: 'bg-gray-100 text-gray-700'
+}
+
+const generateBlacklistRecords = () => {
+  const records = []
+  
+  records.push({
+    id: 'BL20260601001',
+    visitorName: '王大强',
+    visitorPhone: '13800001234',
+    idCard: '110101********1234',
+    reason: 'complaint',
+    reasonDetail: '多次在小区内醉酒闹事，骚扰业主，被3号楼多位业主投诉',
+    status: 'active',
+    createTime: '2026-06-01 14:30:00',
+    createOperator: '张客服',
+    reportSource: '业主投诉',
+    complainant: '3号楼李女士等3位业主',
+    complaintCount: 3,
+    relatedVisitorIds: ['FK202605280012', 'FK202605200008'],
+    releaseRecords: [
+      {
+        id: 'REL20260617001',
+        visitorName: '王大强',
+        visitorPhone: '13800001234',
+        visitTime: '2026-06-17 14:00',
+        endTime: '2026-06-17 18:00',
+        buildingId: 'B003',
+        roomNumber: '3号楼2单元1002室',
+        hostName: '王先生',
+        hostPhone: '13800001111',
+        approvedBy: '物业经理-刘经理',
+        approveTime: '2026-06-17 09:30:00',
+        approveReason: '家中老父亲病危，急需见最后一面，情况特殊紧急',
+        expireTime: '2026-06-17 20:00:00',
+        used: false,
+        usedRecordId: null
+      }
+    ],
+    processLogs: [
+      { time: '2026-06-01 14:30:00', operator: '张客服', action: '列入黑名单', content: '根据3号楼多位业主投诉，该访客多次醉酒闹事，骚扰业主，决定列入黑名单。' },
+      { time: '2026-06-17 09:30:00', operator: '物业经理-刘经理', action: '临时放行审批', content: '家中老父亲病危，急需见最后一面，亲属关系属实，情况特殊紧急，批准本次临时放行，有效期至今日20:00。' }
+    ]
+  })
+  
+  records.push({
+    id: 'BL20260610002',
+    visitorName: '张明',
+    visitorPhone: '13900005678',
+    idCard: '310101********5678',
+    reason: 'identity_fraud',
+    reasonDetail: '冒用他人身份证办理预约，经核实身份证持有人并非本人',
+    status: 'active',
+    createTime: '2026-06-10 09:15:00',
+    createOperator: '安保-陈队长',
+    reportSource: '安保发现',
+    complainant: null,
+    complaintCount: 0,
+    relatedVisitorIds: ['FK202606100005'],
+    releaseRecords: [],
+    processLogs: [
+      { time: '2026-06-10 09:15:00', operator: '安保-陈队长', action: '列入黑名单', content: '门岗核实时发现该访客使用他人身份证预约，身份证照片与本人不符，存在冒用身份行为。' }
+    ]
+  })
+  
+  records.push({
+    id: 'BL20260612003',
+    visitorName: '未知人员',
+    visitorPhone: '17600009999',
+    idCard: '',
+    reason: 'multiple_rejections',
+    reasonDetail: '近1个月内预约8次，7次被拒绝，信息填写不真实，房号与业主不匹配',
+    status: 'active',
+    createTime: '2026-06-12 16:45:00',
+    createOperator: '张客服',
+    reportSource: '系统分析',
+    complainant: null,
+    complaintCount: 0,
+    relatedVisitorIds: ['FK202606120008', 'FK202606110015', 'FK202606100022'],
+    releaseRecords: [],
+    processLogs: [
+      { time: '2026-06-12 16:45:00', operator: '张客服', action: '列入黑名单', content: '系统分析发现该手机号近1个月预约8次被拒绝7次，每次填写的房号和被访人都不真实，存在诈骗嫌疑。' }
+    ]
+  })
+  
+  records.push({
+    id: 'BL20260605004',
+    visitorName: '李小华',
+    visitorPhone: '13500001111',
+    idCard: '440101********2222',
+    reason: 'trespass',
+    reasonDetail: '翻越围栏擅闯小区，被安保拦截',
+    status: 'active',
+    createTime: '2026-06-05 22:10:00',
+    createOperator: '安保-老周',
+    reportSource: '安保发现',
+    complainant: null,
+    complaintCount: 0,
+    relatedVisitorIds: [],
+    releaseRecords: [
+      {
+        id: 'REL20260615001',
+        visitorName: '李小华',
+        visitorPhone: '13500001111',
+        visitTime: '2026-06-15 14:00',
+        endTime: '2026-06-15 18:00',
+        buildingId: 'B003',
+        roomNumber: '3号楼1单元0802室',
+        hostName: '王医生',
+        hostPhone: '13600003333',
+        approvedBy: '物业经理-刘经理',
+        approveTime: '2026-06-15 10:30:00',
+        approveReason: '家人生病需要紧急送医，亲属关系属实，情况特殊',
+        expireTime: '2026-06-15 18:00:00',
+        used: true,
+        usedRecordId: 'FK202606150006'
+      }
+    ],
+    processLogs: [
+      { time: '2026-06-05 22:10:00', operator: '安保-老周', action: '列入黑名单', content: '深夜翻越西侧围栏进入小区，被巡逻安保拦截，自称找朋友但无法提供具体房号和联系方式。' },
+      { time: '2026-06-15 10:30:00', operator: '物业经理-刘经理', action: '临时放行审批', content: '因家人生病需紧急送医，亲属关系属实，批准本次临时放行，有效期至今日18:00。' }
+    ]
+  })
+  
+  records.push({
+    id: 'BL20260520005',
+    visitorName: '赵二宝',
+    visitorPhone: '13700004444',
+    idCard: '320101********3333',
+    reason: 'violence',
+    reasonDetail: '因预约被拒与门岗安保发生冲突，推搡安保人员',
+    status: 'removed',
+    createTime: '2026-05-20 11:20:00',
+    createOperator: '安保-陈队长',
+    reportSource: '安保发现',
+    complainant: null,
+    complaintCount: 0,
+    relatedVisitorIds: ['FK202605200003'],
+    releaseRecords: [],
+    removeTime: '2026-06-10 09:00:00',
+    removeOperator: '物业经理-刘经理',
+    removeReason: '本人提交保证书，承诺文明访客，观察期1个月表现良好',
+    processLogs: [
+      { time: '2026-05-20 11:20:00', operator: '安保-陈队长', action: '列入黑名单', content: '因预约信息不符被拒后，情绪激动推搡门岗安保，造成恶劣影响。' },
+      { time: '2026-06-10 09:00:00', operator: '物业经理-刘经理', action: '移出黑名单', content: '本人提交书面保证书，认错态度诚恳，观察期内无不良记录，决定移出黑名单，继续观察。' }
+    ]
+  })
+  
+  return records
+}
+
+export const blacklistRecords = generateBlacklistRecords()
+
 export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, generateRepairOrders, generateVisitorRecords }

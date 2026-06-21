@@ -60,6 +60,16 @@ const routes = [
     path: '/visitor/:id',
     name: 'VisitorDetail',
     component: () => import('../views/visitor/VisitorDetail.vue')
+  },
+  {
+    path: '/blacklist',
+    name: 'BlacklistList',
+    component: () => import('../views/visitor/BlacklistList.vue')
+  },
+  {
+    path: '/blacklist/:id',
+    name: 'BlacklistDetail',
+    component: () => import('../views/visitor/BlacklistDetail.vue')
   }
 ]
 

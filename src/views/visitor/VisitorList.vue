@@ -223,10 +223,9 @@
               <th>访客信息</th>
               <th>事由</th>
               <th>拜访房号</th>
-              <th>被访人</th>
               <th>到访时间</th>
-              <th>同行/车牌</th>
               <th>状态</th>
+              <th>黑名单状态</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -236,7 +235,10 @@
                 <span class="font-mono text-sm text-primary-600">{{ record.id }}</span>
               </td>
               <td>
-                <div class="font-medium">{{ record.visitorName }}</div>
+                <div class="font-medium flex items-center">
+                  {{ record.visitorName }}
+                  <span v-if="getBlacklistStatus(record.visitorPhone) === 'active'" class="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">黑名单</span>
+                </div>
                 <div class="text-xs text-gray-500">{{ record.visitorPhone }}</div>
               </td>
               <td>
@@ -245,24 +247,35 @@
               </td>
               <td class="font-medium">{{ record.roomNumber }}</td>
               <td>
-                <div>{{ record.hostName }}</div>
-                <div class="text-xs text-gray-500">{{ record.hostPhone }}</div>
-              </td>
-              <td>
                 <div class="text-sm">{{ record.visitTime }}</div>
                 <div class="text-xs text-gray-500">至 {{ record.endTime }}</div>
               </td>
               <td>
-                <div class="text-sm">{{ record.companionCount > 0 ? `同行${record.companionCount}人` : '无同行' }}</div>
-                <div v-if="record.plateNumber" class="text-xs text-blue-600 mt-1">{{ record.plateNumber }}</div>
+                <div class="flex flex-wrap gap-1">
+                  <span class="badge" :class="visitorStatusColorMap[record.status]">
+                    {{ visitorStatusMap[record.status] }}
+                  </span>
+                  <span v-if="record.temporaryReleaseId" class="badge bg-yellow-100 text-yellow-700">
+                    临时放行
+                  </span>
+                </div>
               </td>
               <td>
-                <span class="badge" :class="visitorStatusColorMap[record.status]">
-                  {{ visitorStatusMap[record.status] }}
-                </span>
+                <template v-if="getBlacklistStatus(record.visitorPhone) === 'active'">
+                  <span class="badge bg-red-100 text-red-700">黑名单中</span>
+                </template>
+                <template v-else-if="getBlacklistStatus(record.visitorPhone) === 'released'">
+                  <span class="badge bg-yellow-100 text-yellow-700">临时放行</span>
+                </template>
+                <template v-else-if="getBlacklistStatus(record.visitorPhone) === 'removed'">
+                  <span class="badge bg-gray-100 text-gray-500">已移出</span>
+                </template>
+                <template v-else>
+                  <span class="text-xs text-gray-400">正常</span>
+                </template>
               </td>
               <td>
-                <div class="flex items-center space-x-2" @click.stop>
+                <div class="flex items-center space-x-2 flex-wrap gap-y-1" @click.stop>
                   <button @click="goToDetail(record.id)" class="text-primary-600 hover:text-primary-800 text-sm font-medium">
                     详情
                   </button>
@@ -283,6 +296,9 @@
                   </button>
                   <button v-if="canCancel(record)" @click="openCancelModal(record)" class="text-red-600 hover:text-red-800 text-sm font-medium">
                     取消
+                  </button>
+                  <button v-if="canAddToBlacklist(record)" @click="openAddBlacklistModal(record)" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                    拉黑
                   </button>
                 </div>
               </td>
@@ -434,6 +450,65 @@
         </div>
       </div>
     </Transition>
+
+    <Transition name="fade">
+      <div v-if="showAddBlacklistModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            将访客加入黑名单
+          </h3>
+          <div v-if="addBlacklistForm.recordId" class="mb-4 p-3 bg-red-50 rounded-lg border border-red-100">
+            <p class="text-sm"><span class="text-gray-500">预约号：</span><span class="font-mono font-medium">{{ addBlacklistForm.recordId }}</span></p>
+            <p class="text-sm mt-1"><span class="text-gray-500">访客：</span><span class="font-medium">{{ addBlacklistForm.visitorName }} · {{ addBlacklistForm.visitorPhone }}</span></p>
+            <p class="text-sm mt-1"><span class="text-gray-500">历史被拒次数：</span><span class="font-medium text-red-600">{{ addBlacklistForm.rejectionCount }} 次</span></p>
+          </div>
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">列入原因 <span class="text-red-500">*</span></label>
+                <select v-model="addBlacklistForm.reason" class="select">
+                  <option value="">请选择列入原因</option>
+                  <option v-for="r in blacklistReasons" :key="r.value" :value="r.value">{{ r.label }} - {{ r.description }}</option>
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">原因详情 <span class="text-red-500">*</span></label>
+                <textarea v-model="addBlacklistForm.reasonDetail" class="textarea h-24" placeholder="请详细描述列入黑名单的原因..."></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">信息来源</label>
+                <select v-model="addBlacklistForm.reportSource" class="select">
+                  <option value="手动录入">手动录入</option>
+                  <option value="业主投诉">业主投诉</option>
+                  <option value="安保发现">安保发现</option>
+                  <option value="系统分析">系统分析</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">投诉次数</label>
+                <input v-model.number="addBlacklistForm.complaintCount" type="number" min="0" class="input" placeholder="0" />
+              </div>
+            </div>
+            <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p class="text-sm text-yellow-800 flex items-start">
+                <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                列入黑名单后，该访客再次预约时将被系统自动拦截，需要特殊审批才能放行。请谨慎操作。
+              </p>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+            <button @click="showAddBlacklistModal = false" class="btn-secondary">取消</button>
+            <button @click="submitAddBlacklist" class="btn-danger">确认加入黑名单</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -442,7 +517,7 @@ import { ref, reactive, computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import dayjs from 'dayjs'
 import { Chart, registerables } from 'chart.js'
-import { useStore, visitorPurposes, visitorStatusMap, visitorStatusColorMap } from '../../store'
+import { useStore, visitorPurposes, visitorStatusMap, visitorStatusColorMap, blacklistReasons, blacklistStatusMap, blacklistStatusColorMap } from '../../store'
 import EmptyState from '../../components/EmptyState.vue'
 
 Chart.register(...registerables)
@@ -471,6 +546,7 @@ const showAuditModal = ref(false)
 const showReleaseModal = ref(false)
 const showLeaveModal = ref(false)
 const showCancelModal = ref(false)
+const showAddBlacklistModal = ref(false)
 
 const auditForm = reactive({
   recordId: '',
@@ -503,6 +579,83 @@ const cancelForm = reactive({
   visitorName: '',
   reason: ''
 })
+
+const addBlacklistForm = reactive({
+  recordId: '',
+  visitorName: '',
+  visitorPhone: '',
+  idCard: '',
+  reason: '',
+  reasonDetail: '',
+  reportSource: '手动录入',
+  complaintCount: 0,
+  rejectionCount: 0
+})
+
+const getBlacklistStatus = (visitorPhone) => {
+  if (!visitorPhone) return null
+  const blacklist = store.checkBlacklist(visitorPhone, null)
+  if (blacklist) {
+    return blacklist.status
+  }
+  return null
+}
+
+const canAddToBlacklist = (record) => {
+  const status = getBlacklistStatus(record.visitorPhone)
+  return status !== 'active' && ['service', 'housekeeper', 'security'].includes(currentRole.value)
+}
+
+const openAddBlacklistModal = (record) => {
+  addBlacklistForm.recordId = record.id
+  addBlacklistForm.visitorName = record.visitorName
+  addBlacklistForm.visitorPhone = record.visitorPhone
+  addBlacklistForm.idCard = record.idCard || ''
+  addBlacklistForm.reason = ''
+  addBlacklistForm.reasonDetail = ''
+  addBlacklistForm.reportSource = '手动录入'
+  addBlacklistForm.complaintCount = 0
+  addBlacklistForm.rejectionCount = store.getVisitorRejectionCount(record.visitorPhone)
+  showAddBlacklistModal.value = true
+}
+
+const submitAddBlacklist = () => {
+  if (!addBlacklistForm.reason) {
+    showToast('请选择列入原因', 'error')
+    return
+  }
+  if (!addBlacklistForm.reasonDetail.trim()) {
+    showToast('请填写原因详情', 'error')
+    return
+  }
+
+  const existing = store.checkBlacklist(addBlacklistForm.visitorPhone, addBlacklistForm.idCard)
+  if (existing) {
+    showToast('该访客已在黑名单中', 'warning')
+    return
+  }
+
+  const operator = getOperatorName()
+  const result = store.addToBlacklist({
+    visitorName: addBlacklistForm.visitorName,
+    visitorPhone: addBlacklistForm.visitorPhone,
+    idCard: addBlacklistForm.idCard,
+    reason: addBlacklistForm.reason,
+    reasonDetail: addBlacklistForm.reasonDetail,
+    reportSource: addBlacklistForm.reportSource,
+    complainant: '',
+    complaintCount: addBlacklistForm.complaintCount,
+    relatedVisitorIds: [addBlacklistForm.recordId],
+    operator
+  })
+
+  if (result) {
+    showToast('已成功加入黑名单', 'success')
+    showAddBlacklistModal.value = false
+  } else {
+    showToast('操作失败，请重试', 'error')
+  }
+}
 
 const filteredRecords = computed(() => {
   return store.state.visitorRecords.filter(record => {

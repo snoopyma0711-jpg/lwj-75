@@ -16,7 +16,11 @@ import {
   visitorStatusColorMap,
   visitorRecords,
   generateRepairOrders,
-  generateVisitorRecords
+  generateVisitorRecords,
+  blacklistReasons,
+  blacklistStatusMap,
+  blacklistStatusColorMap,
+  blacklistRecords
 } from './mockData'
 
 const today = dayjs('2026-06-17')
@@ -39,6 +43,10 @@ const state = reactive({
   visitorPurposes: [...visitorPurposes],
   visitorStatusMap: { ...visitorStatusMap },
   visitorStatusColorMap: { ...visitorStatusColorMap },
+  blacklistRecords: [...blacklistRecords],
+  blacklistReasons: [...blacklistReasons],
+  blacklistStatusMap: { ...blacklistStatusMap },
+  blacklistStatusColorMap: { ...blacklistStatusColorMap },
   currentDate: today.format('YYYY-MM-DD')
 })
 
@@ -164,7 +172,69 @@ const getters = {
       days.push({ date, rate, count: dayVisits.length })
     }
     return days
-  })
+  }),
+
+  activeBlacklistCount: computed(() => {
+    return state.blacklistRecords.filter(r => r.status === 'active').length
+  }),
+
+  todayReleasedCount: computed(() => {
+    return state.blacklistRecords.filter(r => {
+      if (!r.releaseRecords || r.releaseRecords.length === 0) return false
+      return r.releaseRecords.some(rel => 
+        !rel.used && dayjs(rel.expireTime).isAfter(nowTime)
+      )
+    }).length
+  }),
+
+  todayBlacklistInterceptions: computed(() => {
+    return state.visitorRecords.filter(r => {
+      const blacklist = state.blacklistRecords.find(bl => 
+        bl.status === 'active' && 
+        (bl.visitorPhone === r.visitorPhone || 
+         (bl.idCard && bl.idCard === r.idCard))
+      )
+      return blacklist && dayjs(r.createTime).format('YYYY-MM-DD') === state.currentDate
+    }).length
+  }),
+
+  getBlacklistByPhone: (phone) => {
+    return state.blacklistRecords.find(r => r.visitorPhone === phone && r.status === 'active')
+  },
+
+  getBlacklistByIdCard: (idCard) => {
+    if (!idCard) return null
+    return state.blacklistRecords.find(r => r.idCard === idCard && r.status === 'active')
+  },
+
+  checkBlacklist: (visitorPhone, idCard) => {
+    if (!visitorPhone) return null
+    const byPhone = state.blacklistRecords.find(r => 
+      r.visitorPhone === visitorPhone && r.status === 'active'
+    )
+    if (byPhone) return byPhone
+    if (idCard) {
+      const byIdCard = state.blacklistRecords.find(r => 
+        r.idCard === idCard && r.status === 'active'
+      )
+      if (byIdCard) return byIdCard
+    }
+    return null
+  },
+
+  checkTemporaryRelease: (visitorPhone, visitTime) => {
+    const blacklist = state.blacklistRecords.find(r => 
+      r.visitorPhone === visitorPhone && r.status === 'active'
+    )
+    if (!blacklist || !blacklist.releaseRecords) return null
+    const visit = dayjs(visitTime)
+    return blacklist.releaseRecords.find(rel => 
+      !rel.used && 
+      dayjs(rel.expireTime).isAfter(nowTime) &&
+      visit.isAfter(dayjs(rel.approveTime)) &&
+      visit.isBefore(dayjs(rel.expireTime).add(1, 'minute'))
+    )
+  }
 }
 
 const actions = {
@@ -1010,6 +1080,145 @@ const actions = {
     }
     
     return errors
+  },
+
+  addToBlacklist(blacklistData) {
+    const id = `BL${today.format('YYYYMMDD')}${String(state.blacklistRecords.length + 1).padStart(3, '0')}`
+    const newRecord = {
+      id,
+      visitorName: blacklistData.visitorName,
+      visitorPhone: blacklistData.visitorPhone,
+      idCard: blacklistData.idCard || '',
+      reason: blacklistData.reason,
+      reasonDetail: blacklistData.reasonDetail,
+      status: 'active',
+      createTime: nowStr,
+      createOperator: blacklistData.operator,
+      reportSource: blacklistData.reportSource || '手动录入',
+      complainant: blacklistData.complainant || null,
+      complaintCount: blacklistData.complaintCount || 0,
+      relatedVisitorIds: blacklistData.relatedVisitorIds || [],
+      releaseRecords: [],
+      processLogs: [
+        {
+          time: nowStr,
+          operator: blacklistData.operator,
+          action: '列入黑名单',
+          content: blacklistData.reasonDetail || '列入黑名单'
+        }
+      ]
+    }
+    state.blacklistRecords.unshift(newRecord)
+    return newRecord
+  },
+
+  removeFromBlacklist(blacklistId, operator, reason) {
+    const record = state.blacklistRecords.find(r => r.id === blacklistId)
+    if (!record) return false
+    record.status = 'removed'
+    record.removeTime = nowStr
+    record.removeOperator = operator
+    record.removeReason = reason
+    record.processLogs.push({
+      time: nowStr,
+      operator,
+      action: '移出黑名单',
+      content: reason
+    })
+    return true
+  },
+
+  getBlacklistById(blacklistId) {
+    return state.blacklistRecords.find(r => r.id === blacklistId)
+  },
+
+  addTemporaryRelease(blacklistId, releaseData) {
+    const record = state.blacklistRecords.find(r => r.id === blacklistId)
+    if (!record) return null
+    const releaseId = `REL${today.format('YYYYMMDD')}${String((record.releaseRecords?.length || 0) + 1).padStart(3, '0')}`
+    const newRelease = {
+      id: releaseId,
+      visitorName: record.visitorName,
+      visitorPhone: record.visitorPhone,
+      visitTime: releaseData.visitTime,
+      endTime: releaseData.endTime,
+      buildingId: releaseData.buildingId,
+      roomNumber: releaseData.roomNumber,
+      hostName: releaseData.hostName,
+      hostPhone: releaseData.hostPhone,
+      approvedBy: releaseData.approvedBy,
+      approveTime: nowStr,
+      approveReason: releaseData.approveReason,
+      expireTime: releaseData.expireTime,
+      used: false,
+      usedRecordId: null
+    }
+    if (!record.releaseRecords) {
+      record.releaseRecords = []
+    }
+    record.releaseRecords.unshift(newRelease)
+    record.processLogs.push({
+      time: nowStr,
+      operator: releaseData.approvedBy,
+      action: '临时放行审批',
+      content: `${releaseData.approveReason}，有效期至${releaseData.expireTime}`
+    })
+    return newRelease
+  },
+
+  useTemporaryRelease(blacklistId, releaseId, visitorRecordId) {
+    const record = state.blacklistRecords.find(r => r.id === blacklistId)
+    if (!record || !record.releaseRecords) return false
+    const release = record.releaseRecords.find(r => r.id === releaseId)
+    if (!release) return false
+    release.used = true
+    release.usedRecordId = visitorRecordId
+    return true
+  },
+
+  markTemporaryReleaseUsed(releaseId, visitorRecordId) {
+    for (const blacklist of state.blacklistRecords) {
+      if (!blacklist.releaseRecords) continue
+      const release = blacklist.releaseRecords.find(r => r.id === releaseId)
+      if (release) {
+        release.used = true
+        release.usedRecordId = visitorRecordId
+        release.usedTime = nowStr
+        blacklist.processLogs.push({
+          time: nowStr,
+          operator: '系统',
+          action: '临时放行使用',
+          content: `临时放行${releaseId}已被预约${visitorRecordId}使用`
+        })
+        return true
+      }
+    }
+    return false
+  },
+
+  updateBlacklistRecord(blacklistId, updateData) {
+    const record = state.blacklistRecords.find(r => r.id === blacklistId)
+    if (!record) return false
+    Object.assign(record, updateData)
+    return true
+  },
+
+  addBlacklistProcessLog(blacklistId, operator, action, content) {
+    const record = state.blacklistRecords.find(r => r.id === blacklistId)
+    if (!record) return false
+    record.processLogs.push({
+      time: nowStr,
+      operator,
+      action,
+      content
+    })
+    return true
+  },
+
+  getVisitorRejectionCount(visitorPhone) {
+    return state.visitorRecords.filter(r => 
+      r.visitorPhone === visitorPhone && r.status === 'rejected'
+    ).length
   }
 }
 
@@ -1021,4 +1230,4 @@ export function useStore() {
   }
 }
 
-export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, visitorPurposes, visitorStatusMap, visitorStatusColorMap }
+export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, visitorPurposes, visitorStatusMap, visitorStatusColorMap, blacklistReasons, blacklistStatusMap, blacklistStatusColorMap }

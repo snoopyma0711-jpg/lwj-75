@@ -104,7 +104,8 @@ const roleName = computed(() => {
 
 const menuItems = [
   { path: '/', name: '首页仪表盘' },
-  { path: '/visitor', name: '访客预约' }
+  { path: '/visitor', name: '访客预约' },
+  { path: '/blacklist', name: '黑名单管理' }
 ]
 
 const toast = ref({
