@@ -2447,4 +2447,734 @@ const generateDecorationRecords = () => {
 
 export const decorationRecords = generateDecorationRecords()
 
+// ==================== 搬家预约相关 ====================
+
+export const movingTypes = [
+  { value: 'move_in', label: '搬入' },
+  { value: 'move_out', label: '搬出' }
+]
+
+export const movingStatusMap = {
+  pending_audit: '待审核',
+  audit_approved: '审核通过',
+  audit_rejected: '审核拒绝',
+  deposit_paid: '已缴押金',
+  entry_released: '已放行入场',
+  verifying: '现场核验中',
+  exit_released: '已放行离场',
+  completed: '已完结',
+  cancelled: '已取消',
+  expired: '已过期'
+}
+
+export const movingStatusColorMap = {
+  pending_audit: 'bg-yellow-100 text-yellow-700',
+  audit_approved: 'bg-blue-100 text-blue-700',
+  audit_rejected: 'bg-gray-100 text-gray-700',
+  deposit_paid: 'bg-indigo-100 text-indigo-700',
+  entry_released: 'bg-purple-100 text-purple-700',
+  verifying: 'bg-orange-100 text-orange-700',
+  exit_released: 'bg-teal-100 text-teal-700',
+  completed: 'bg-green-100 text-green-700',
+  cancelled: 'bg-red-100 text-red-700',
+  expired: 'bg-orange-100 text-orange-700'
+}
+
+export const depositAmountOptions = [
+  { value: 500, label: '500元' },
+  { value: 1000, label: '1000元' },
+  { value: 2000, label: '2000元' },
+  { value: 3000, label: '3000元' },
+  { value: 5000, label: '5000元' }
+]
+
+const generateMovingRecords = () => {
+  const records = []
+  const ownerNames = ['王先生', '李女士', '张先生', '刘阿姨', '陈先生', '赵女士', '孙先生', '周女士']
+  const contactNames = ['张伟', '李娜', '王芳', '刘洋', '陈静', '杨帆', '赵磊', '黄敏', '周杰', '吴婷']
+  const itemExamples = [
+    ['沙发', '茶几', '电视柜', '餐桌', '餐椅*4', '主卧大床', '次卧床', '衣柜*2', '书桌', '冰箱', '洗衣机', '电视'],
+    ['沙发', '餐桌', '餐椅*6', '床*2', '衣柜*3', '冰箱', '洗衣机', '空调*3', '电视', '书柜'],
+    ['单人沙发', '电脑桌', '椅子', '单人床', '衣柜', '冰箱', '洗衣机', '微波炉'],
+    ['沙发*2', '茶几', '电视柜', '餐桌', '餐椅*6', '主卧大床', '次卧床*2', '衣柜*4', '书桌*2', '冰箱', '洗衣机', '空调*4', '电视*2', '跑步机', '钢琴']
+  ]
+  const platePrefixes = ['京A', '京B', '京N', '沪C', '粤B', '浙A', '苏E']
+  const movingCompanies = ['蚂蚁搬家', '四通搬家', '兄弟搬家', '蓝犀牛搬家', '自如搬家', '货拉拉']
+
+  // 今日的预约 - 各种状态混合
+  const todayRecords = [
+    // 待审核 - 搬入
+    {
+      id: 'BJ202606220010',
+      movingType: 'move_in',
+      buildingId: 'B001',
+      roomNumber: '1号楼1单元1501室',
+      ownerName: '王女士',
+      ownerPhone: '13811112222',
+      contactName: '张伟',
+      contactPhone: '13912345678',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 09:00',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 18:00',
+      workerCount: 4,
+      vehicleCount: 1,
+      plateNumber: '京A88888',
+      movingCompany: '蚂蚁搬家',
+      declaredItems: itemExamples[0],
+      remark: '大件家具有电梯，需要帮忙注意楼道保护',
+      depositAmount: 2000,
+      status: 'pending_audit',
+      createTime: today.format('YYYY-MM-DD') + ' 08:15:00',
+      createOperator: '王女士（业主APP）',
+      auditTime: null,
+      auditOperator: null,
+      auditRemark: null,
+      depositTime: null,
+      depositOperator: null,
+      depositMethod: null,
+      entryReleaseTime: null,
+      entryReleaseOperator: null,
+      entryReleaseGate: null,
+      verifyTime: null,
+      verifyOperator: null,
+      verifyResult: null,
+      verifyRemark: null,
+      itemsConsistent: null,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: false,
+      abnormalTypes: [],
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 08:15:00', operator: '王女士', action: '提交预约', content: '业主通过APP提交搬入预约申请' }
+      ]
+    },
+    // 待审核 - 搬出
+    {
+      id: 'BJ202606220011',
+      movingType: 'move_out',
+      buildingId: 'B002',
+      roomNumber: '2号楼2单元2003室',
+      ownerName: '李先生',
+      ownerPhone: '13922223333',
+      contactName: '李娜',
+      contactPhone: '13688889999',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 10:00',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 16:00',
+      workerCount: 3,
+      vehicleCount: 1,
+      plateNumber: '京B66666',
+      movingCompany: '四通搬家',
+      declaredItems: itemExamples[1],
+      remark: '',
+      depositAmount: 1000,
+      status: 'pending_audit',
+      createTime: today.format('YYYY-MM-DD') + ' 08:50:00',
+      createOperator: '李先生（业主APP）',
+      auditTime: null,
+      auditOperator: null,
+      auditRemark: null,
+      depositTime: null,
+      depositOperator: null,
+      depositMethod: null,
+      entryReleaseTime: null,
+      entryReleaseOperator: null,
+      entryReleaseGate: null,
+      verifyTime: null,
+      verifyOperator: null,
+      verifyResult: null,
+      verifyRemark: null,
+      itemsConsistent: null,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: false,
+      abnormalTypes: [],
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 08:50:00', operator: '李先生', action: '提交预约', content: '业主通过APP提交搬出预约申请' }
+      ]
+    },
+    // 审核通过待缴押金
+    {
+      id: 'BJ202606220001',
+      movingType: 'move_in',
+      buildingId: 'B004',
+      roomNumber: '5号楼3单元1201室',
+      ownerName: '赵先生',
+      ownerPhone: '13744445555',
+      contactName: '王芳',
+      contactPhone: '13622223333',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 09:30',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 19:00',
+      workerCount: 5,
+      vehicleCount: 2,
+      plateNumber: '京N77777',
+      movingCompany: '兄弟搬家',
+      declaredItems: itemExamples[3],
+      remark: '有钢琴，需要特别小心',
+      depositAmount: 3000,
+      status: 'audit_approved',
+      createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 19:00:00',
+      createOperator: '赵先生（业主APP）',
+      auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 19:30:00',
+      auditOperator: '张客服',
+      auditRemark: '资料齐全，审核通过，请尽快缴纳押金',
+      depositTime: null,
+      depositOperator: null,
+      depositMethod: null,
+      entryReleaseTime: null,
+      entryReleaseOperator: null,
+      entryReleaseGate: null,
+      verifyTime: null,
+      verifyOperator: null,
+      verifyResult: null,
+      verifyRemark: null,
+      itemsConsistent: null,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: true,
+      abnormalTypes: ['deposit_unpaid'],
+      processLogs: [
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 19:00:00', operator: '赵先生', action: '提交预约', content: '业主通过APP提交搬入预约申请' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 19:30:00', operator: '张客服', action: '审核通过', content: '资料齐全，审核通过，请尽快缴纳押金' }
+      ]
+    },
+    // 已缴押金待放行（资料不齐异常）
+    {
+      id: 'BJ202606220002',
+      movingType: 'move_out',
+      buildingId: 'B005',
+      roomNumber: '6号楼1单元0803室',
+      ownerName: '陈女士',
+      ownerPhone: '13555556666',
+      contactName: '刘洋',
+      contactPhone: '13511112222',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 08:30',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 14:00',
+      workerCount: 2,
+      vehicleCount: 1,
+      plateNumber: '',
+      movingCompany: '',
+      declaredItems: itemExamples[2],
+      remark: '',
+      depositAmount: 500,
+      status: 'deposit_paid',
+      createTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+      createOperator: '张客服（前台登记）',
+      auditTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:15:00',
+      auditOperator: '李客服',
+      auditRemark: '缺少搬运车辆信息，已通知业主补充',
+      depositTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 09:00:00',
+      depositOperator: '王客服',
+      depositMethod: '现金',
+      entryReleaseTime: null,
+      entryReleaseOperator: null,
+      entryReleaseGate: null,
+      verifyTime: null,
+      verifyOperator: null,
+      verifyResult: null,
+      verifyRemark: null,
+      itemsConsistent: null,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: true,
+      abnormalTypes: ['material_incomplete'],
+      processLogs: [
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '张客服', action: '提交预约', content: '物业前台代业主登记搬出预约' },
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:15:00', operator: '李客服', action: '审核通过', content: '资料不齐但业主紧急，先通过审核，需补充搬运车辆信息' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 09:00:00', operator: '王客服', action: '押金登记', content: '业主缴纳押金500元（现金）' }
+      ]
+    },
+    // 已放行入场（预约超时异常）
+    {
+      id: 'BJ202606220003',
+      movingType: 'move_in',
+      buildingId: 'B003',
+      roomNumber: '3号楼1单元0502室',
+      ownerName: '张阿姨',
+      ownerPhone: '13633334444',
+      contactName: '陈静',
+      contactPhone: '13799990000',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 07:00',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 12:00',
+      workerCount: 3,
+      vehicleCount: 1,
+      plateNumber: '京A12345',
+      movingCompany: '蓝犀牛搬家',
+      declaredItems: itemExamples[0],
+      remark: '',
+      depositAmount: 1000,
+      status: 'entry_released',
+      createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:00:00',
+      createOperator: '张阿姨（业主APP）',
+      auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:10:00',
+      auditOperator: '王客服',
+      auditRemark: '',
+      depositTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 17:00:00',
+      depositOperator: '李客服',
+      depositMethod: '微信支付',
+      entryReleaseTime: today.format('YYYY-MM-DD') + ' 07:15:00',
+      entryReleaseOperator: '安保-老周',
+      entryReleaseGate: '东门',
+      verifyTime: null,
+      verifyOperator: null,
+      verifyResult: null,
+      verifyRemark: null,
+      itemsConsistent: null,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: true,
+      abnormalTypes: ['overtime'],
+      processLogs: [
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:00:00', operator: '张阿姨', action: '提交预约', content: '业主通过APP提交搬入预约申请' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 16:10:00', operator: '王客服', action: '审核通过', content: '审核通过' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 17:00:00', operator: '李客服', action: '押金登记', content: '业主缴纳押金1000元（微信支付）' },
+        { time: today.format('YYYY-MM-DD') + ' 07:15:00', operator: '安保-老周', action: '入场放行', content: '从东门车辆通道放行入场' }
+      ]
+    },
+    // 现场核验中（物品不一致异常）
+    {
+      id: 'BJ202606220004',
+      movingType: 'move_out',
+      buildingId: 'B001',
+      roomNumber: '1号楼2单元1002室',
+      ownerName: '孙女士',
+      ownerPhone: '13277778888',
+      contactName: '杨帆',
+      contactPhone: '13844445555',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 08:00',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 13:00',
+      workerCount: 4,
+      vehicleCount: 1,
+      plateNumber: '京B99999',
+      movingCompany: '自如搬家',
+      declaredItems: ['沙发', '茶几', '电视柜', '床', '衣柜', '冰箱', '洗衣机'],
+      remark: '',
+      depositAmount: 2000,
+      status: 'verifying',
+      createTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+      createOperator: '孙女士（业主APP）',
+      auditTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 14:30:00',
+      auditOperator: '张客服',
+      auditRemark: '',
+      depositTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+      depositOperator: '张客服',
+      depositMethod: '支付宝',
+      entryReleaseTime: today.format('YYYY-MM-DD') + ' 08:10:00',
+      entryReleaseOperator: '安保-小王',
+      entryReleaseGate: '南门',
+      verifyTime: today.format('YYYY-MM-DD') + ' 11:30:00',
+      verifyOperator: '楼栋管家-小赵',
+      verifyResult: 'abnormal',
+      verifyRemark: '申报物品中没有钢琴，但实际发现有钢琴需要搬出，与申报不符',
+      itemsConsistent: false,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: true,
+      abnormalTypes: ['items_inconsistent'],
+      processLogs: [
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '孙女士', action: '提交预约', content: '业主通过APP提交搬出预约申请' },
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 14:30:00', operator: '张客服', action: '审核通过', content: '审核通过' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '张客服', action: '押金登记', content: '业主缴纳押金2000元（支付宝）' },
+        { time: today.format('YYYY-MM-DD') + ' 08:10:00', operator: '安保-小王', action: '入场放行', content: '从南门车辆通道放行入场' },
+        { time: today.format('YYYY-MM-DD') + ' 11:30:00', operator: '楼栋管家-小赵', action: '现场核验', content: '现场核验发现物品不一致：申报中没有钢琴，但实际有钢琴需要搬出' }
+      ]
+    },
+    // 已放行离场
+    {
+      id: 'BJ202606220005',
+      movingType: 'move_in',
+      buildingId: 'B006',
+      roomNumber: '8号楼2单元0301室',
+      ownerName: '刘先生',
+      ownerPhone: '13366667777',
+      contactName: '赵磊',
+      contactPhone: '13733334444',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 07:30',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 11:00',
+      workerCount: 3,
+      vehicleCount: 1,
+      plateNumber: '京N55555',
+      movingCompany: '货拉拉',
+      declaredItems: itemExamples[2],
+      remark: '东西不多，应该很快搬完',
+      depositAmount: 500,
+      status: 'exit_released',
+      createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 20:00:00',
+      createOperator: '刘先生（业主APP）',
+      auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 20:30:00',
+      auditOperator: '李客服',
+      auditRemark: '',
+      depositTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 21:00:00',
+      depositOperator: '系统自动',
+      depositMethod: '在线支付',
+      entryReleaseTime: today.format('YYYY-MM-DD') + ' 07:40:00',
+      entryReleaseOperator: '安保-老周',
+      entryReleaseGate: '北门',
+      verifyTime: today.format('YYYY-MM-DD') + ' 10:20:00',
+      verifyOperator: '楼栋管家-小钱',
+      verifyResult: 'normal',
+      verifyRemark: '物品与申报一致，无损坏',
+      itemsConsistent: true,
+      exitReleaseTime: today.format('YYYY-MM-DD') + ' 10:45:00',
+      exitReleaseOperator: '安保-老周',
+      exitReleaseGate: '北门',
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: false,
+      abnormalTypes: [],
+      processLogs: [
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 20:00:00', operator: '刘先生', action: '提交预约', content: '业主通过APP提交搬入预约申请' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 20:30:00', operator: '李客服', action: '审核通过', content: '审核通过' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 21:00:00', operator: '系统', action: '押金登记', content: '业主在线支付押金500元' },
+        { time: today.format('YYYY-MM-DD') + ' 07:40:00', operator: '安保-老周', action: '入场放行', content: '从北门车辆通道放行入场' },
+        { time: today.format('YYYY-MM-DD') + ' 10:20:00', operator: '楼栋管家-小钱', action: '现场核验', content: '现场核验通过，物品与申报一致，无公共区域损坏' },
+        { time: today.format('YYYY-MM-DD') + ' 10:45:00', operator: '安保-老周', action: '离场放行', content: '从北门车辆通道放行离场' }
+      ]
+    },
+    // 已完结
+    {
+      id: 'BJ202606220006',
+      movingType: 'move_out',
+      buildingId: 'B004',
+      roomNumber: '5号楼1单元2201室',
+      ownerName: '孙先生',
+      ownerPhone: '13812123434',
+      contactName: '黄敏',
+      contactPhone: '13566667777',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 06:00',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 09:00',
+      workerCount: 5,
+      vehicleCount: 2,
+      plateNumber: '京A77777',
+      movingCompany: '蚂蚁搬家',
+      declaredItems: itemExamples[3],
+      remark: '东西比较多，安排了两辆车',
+      depositAmount: 5000,
+      status: 'completed',
+      createTime: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 09:00:00',
+      createOperator: '孙先生（业主APP）',
+      auditTime: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 09:30:00',
+      auditOperator: '张客服',
+      auditRemark: '资料齐全，审核通过',
+      depositTime: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:00:00',
+      depositOperator: '王客服',
+      depositMethod: '银行转账',
+      entryReleaseTime: today.format('YYYY-MM-DD') + ' 06:15:00',
+      entryReleaseOperator: '安保-陈队长',
+      entryReleaseGate: '东门',
+      verifyTime: today.format('YYYY-MM-DD') + ' 08:30:00',
+      verifyOperator: '楼栋管家-小李',
+      verifyResult: 'normal',
+      verifyRemark: '物品核对无误，公共区域完好',
+      itemsConsistent: true,
+      exitReleaseTime: today.format('YYYY-MM-DD') + ' 08:50:00',
+      exitReleaseOperator: '安保-陈队长',
+      exitReleaseGate: '东门',
+      completeTime: today.format('YYYY-MM-DD') + ' 09:10:00',
+      completeOperator: '张客服',
+      completeRemark: '搬家流程圆满结束，无任何异常',
+      depositRefunded: true,
+      depositRefundTime: today.format('YYYY-MM-DD') + ' 09:15:00',
+      hasAbnormal: false,
+      abnormalTypes: [],
+      processLogs: [
+        { time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 09:00:00', operator: '孙先生', action: '提交预约', content: '业主通过APP提交搬出预约申请' },
+        { time: today.subtract(3, 'day').format('YYYY-MM-DD') + ' 09:30:00', operator: '张客服', action: '审核通过', content: '资料齐全，审核通过' },
+        { time: today.subtract(2, 'day').format('YYYY-MM-DD') + ' 10:00:00', operator: '王客服', action: '押金登记', content: '业主缴纳押金5000元（银行转账）' },
+        { time: today.format('YYYY-MM-DD') + ' 06:15:00', operator: '安保-陈队长', action: '入场放行', content: '从东门车辆通道放行入场' },
+        { time: today.format('YYYY-MM-DD') + ' 08:30:00', operator: '楼栋管家-小李', action: '现场核验', content: '现场核验通过，物品与申报一致，公共区域完好无损' },
+        { time: today.format('YYYY-MM-DD') + ' 08:50:00', operator: '安保-陈队长', action: '离场放行', content: '从东门车辆通道放行离场' },
+        { time: today.format('YYYY-MM-DD') + ' 09:10:00', operator: '张客服', action: '完结登记', content: '搬家流程圆满结束，押金已退还业主' }
+      ]
+    },
+    // 审核拒绝
+    {
+      id: 'BJ202606220007',
+      movingType: 'move_in',
+      buildingId: 'B003',
+      roomNumber: '3号楼2单元1203室',
+      ownerName: '查无此人',
+      ownerPhone: '13800000000',
+      contactName: '未知人员',
+      contactPhone: '10086',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 09:00',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 18:00',
+      workerCount: 2,
+      vehicleCount: 1,
+      plateNumber: '',
+      movingCompany: '',
+      declaredItems: [],
+      remark: '',
+      depositAmount: 1000,
+      status: 'audit_rejected',
+      createTime: today.format('YYYY-MM-DD') + ' 08:30:00',
+      createOperator: '未知',
+      auditTime: today.format('YYYY-MM-DD') + ' 08:45:00',
+      auditOperator: '张客服',
+      auditRemark: '业主信息不匹配，房号查无此业主，且联系方式无效',
+      depositTime: null,
+      depositOperator: null,
+      depositMethod: null,
+      entryReleaseTime: null,
+      entryReleaseOperator: null,
+      entryReleaseGate: null,
+      verifyTime: null,
+      verifyOperator: null,
+      verifyResult: null,
+      verifyRemark: null,
+      itemsConsistent: null,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: true,
+      abnormalTypes: ['material_incomplete'],
+      processLogs: [
+        { time: today.format('YYYY-MM-DD') + ' 08:30:00', operator: '未知', action: '提交预约', content: '通过访客端提交预约' },
+        { time: today.format('YYYY-MM-DD') + ' 08:45:00', operator: '张客服', action: '审核拒绝', content: '业主信息不匹配，房号查无此业主，且联系方式无效' }
+      ]
+    },
+    // 已取消
+    {
+      id: 'BJ202606220008',
+      movingType: 'move_out',
+      buildingId: 'B002',
+      roomNumber: '2号楼1单元1501室',
+      ownerName: '周先生',
+      ownerPhone: '13188889999',
+      contactName: '周杰',
+      contactPhone: '13800001111',
+      moveStartTime: today.format('YYYY-MM-DD') + ' 10:00',
+      moveEndTime: today.format('YYYY-MM-DD') + ' 16:00',
+      workerCount: 3,
+      vehicleCount: 1,
+      plateNumber: '京B12345',
+      movingCompany: '四通搬家',
+      declaredItems: itemExamples[1],
+      remark: '',
+      depositAmount: 2000,
+      status: 'cancelled',
+      createTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:00:00',
+      createOperator: '周先生（业主APP）',
+      auditTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:10:00',
+      auditOperator: '李客服',
+      auditRemark: '',
+      depositTime: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 15:00:00',
+      depositOperator: '王客服',
+      depositMethod: '微信支付',
+      entryReleaseTime: null,
+      entryReleaseOperator: null,
+      entryReleaseGate: null,
+      verifyTime: null,
+      verifyOperator: null,
+      verifyResult: null,
+      verifyRemark: null,
+      itemsConsistent: null,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: true,
+      depositRefundTime: today.format('YYYY-MM-DD') + ' 07:30:00',
+      hasAbnormal: false,
+      abnormalTypes: [],
+      processLogs: [
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:00:00', operator: '周先生', action: '提交预约', content: '业主通过APP提交搬出预约申请' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 14:10:00', operator: '李客服', action: '审核通过', content: '审核通过' },
+        { time: today.subtract(1, 'day').format('YYYY-MM-DD') + ' 15:00:00', operator: '王客服', action: '押金登记', content: '业主缴纳押金2000元（微信支付）' },
+        { time: today.format('YYYY-MM-DD') + ' 07:00:00', operator: '周先生', action: '取消预约', content: '业主取消预约，搬家改期至下周，押金已原路退回' }
+      ]
+    }
+  ]
+
+  records.push(...todayRecords)
+
+  // 过去几天的记录，用于列表展示
+  for (let dayOffset = 1; dayOffset <= 10; dayOffset++) {
+    const day = today.subtract(dayOffset, 'day')
+    const dayStr = day.format('YYYY-MM-DD')
+    const recordsForDay = 2 + Math.floor(Math.random() * 3)
+    
+    for (let i = 0; i < recordsForDay; i++) {
+      const buildingIdx = Math.floor(Math.random() * 6)
+      const ownerIdx = Math.floor(Math.random() * ownerNames.length)
+      const contactIdx = Math.floor(Math.random() * contactNames.length)
+      const itemsIdx = Math.floor(Math.random() * itemExamples.length)
+      const typeIdx = Math.floor(Math.random() * 2)
+      const movingType = typeIdx === 0 ? 'move_in' : 'move_out'
+      const statusRoll = Math.random()
+      let status
+      if (statusRoll < 0.7) {
+        status = 'completed'
+      } else if (statusRoll < 0.85) {
+        status = 'cancelled'
+      } else {
+        status = 'expired'
+      }
+      
+      const startHour = 8 + Math.floor(Math.random() * 6)
+      const duration = 3 + Math.floor(Math.random() * 6)
+      const endHour = Math.min(22, startHour + duration)
+      const workerCount = 2 + Math.floor(Math.random() * 5)
+      const vehicleCount = 1 + Math.floor(Math.random() * 2)
+      const depositAmount = [500, 1000, 2000, 3000][Math.floor(Math.random() * 4)]
+      
+      const id = `BJ${dayStr.replace(/-/g, '')}${String(i + 100).padStart(4, '0')}`
+      
+      const record = {
+        id: id,
+        movingType: movingType,
+        buildingId: buildings[buildingIdx].id,
+        roomNumber: `${buildings[buildingIdx].name}${Math.floor(Math.random() * 2) + 1}单元${String(Math.floor(Math.random() * (buildings[buildingIdx].floors - 1)) + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 4) + 1).padStart(2, '0')}室`,
+        ownerName: ownerNames[ownerIdx],
+        ownerPhone: `13${Math.floor(Math.random() * 9)}${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
+        contactName: contactNames[contactIdx],
+        contactPhone: `13${Math.floor(Math.random() * 9)}${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
+        moveStartTime: `${dayStr} ${String(startHour).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
+        moveEndTime: `${dayStr} ${String(endHour).padStart(2, '0')}:00`,
+        workerCount: workerCount,
+        vehicleCount: vehicleCount,
+        plateNumber: Math.random() > 0.3 ? `${platePrefixes[Math.floor(Math.random() * platePrefixes.length)]}${String(Math.floor(Math.random() * 90000) + 10000)}` : '',
+        movingCompany: Math.random() > 0.2 ? movingCompanies[Math.floor(Math.random() * movingCompanies.length)] : '',
+        declaredItems: itemExamples[itemsIdx],
+        remark: '',
+        depositAmount: depositAmount,
+        status: status,
+        createTime: `${dayStr} ${String(Math.max(0, startHour - 3)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`,
+        createOperator: ['业主APP', '张客服（前台）', '李客服（前台）', '王客服（前台）'][Math.floor(Math.random() * 4)],
+        auditTime: status !== 'expired' ? `${dayStr} ${String(Math.max(0, startHour - 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
+        auditOperator: status !== 'expired' ? ['张客服', '李客服', '王客服', '系统自动'][Math.floor(Math.random() * 4)] : null,
+        auditRemark: '',
+        depositTime: ['completed', 'cancelled'].includes(status) ? `${dayStr} ${String(Math.max(0, startHour - 1)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
+        depositOperator: ['completed', 'cancelled'].includes(status) ? ['张客服', '李客服', '王客服', '系统自动'][Math.floor(Math.random() * 4)] : null,
+        depositMethod: ['completed', 'cancelled'].includes(status) ? ['微信支付', '支付宝', '现金', '银行转账'][Math.floor(Math.random() * 4)] : null,
+        entryReleaseTime: status === 'completed' ? `${dayStr} ${String(startHour).padStart(2, '0')}:${String(Math.min(59, Math.floor(Math.random() * 20) + 10)).padStart(2, '0')}:00` : null,
+        entryReleaseOperator: status === 'completed' ? ['安保-陈队长', '安保-小王', '安保-老周'][Math.floor(Math.random() * 3)] : null,
+        entryReleaseGate: status === 'completed' ? ['东门', '南门', '西门', '北门'][Math.floor(Math.random() * 4)] : null,
+        verifyTime: status === 'completed' ? `${dayStr} ${String(Math.min(23, endHour - 1)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
+        verifyOperator: status === 'completed' ? ['楼栋管家-小孙', '楼栋管家-小李', '楼栋管家-小赵', '楼栋管家-小钱'][Math.floor(Math.random() * 4)] : null,
+        verifyResult: status === 'completed' ? 'normal' : null,
+        verifyRemark: status === 'completed' ? '物品与申报一致，无异常' : null,
+        itemsConsistent: status === 'completed' ? true : null,
+        exitReleaseTime: status === 'completed' ? `${dayStr} ${String(endHour).padStart(2, '0')}:${String(Math.floor(Math.random() * 30)).padStart(2, '0')}:00` : null,
+        exitReleaseOperator: status === 'completed' ? ['安保-陈队长', '安保-小王', '安保-老周'][Math.floor(Math.random() * 3)] : null,
+        exitReleaseGate: status === 'completed' ? ['东门', '南门', '西门', '北门'][Math.floor(Math.random() * 4)] : null,
+        completeTime: status === 'completed' ? `${dayStr} ${String(Math.min(23, endHour + 1)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
+        completeOperator: status === 'completed' ? ['张客服', '李客服', '王客服'][Math.floor(Math.random() * 3)] : null,
+        completeRemark: status === 'completed' ? '搬家流程正常结束' : null,
+        depositRefunded: status === 'completed' ? true : (status === 'cancelled' ? true : null),
+        depositRefundTime: ['completed', 'cancelled'].includes(status) ? `${dayStr} ${String(Math.min(23, endHour + 1)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00` : null,
+        hasAbnormal: false,
+        abnormalTypes: [],
+        processLogs: [
+          { time: `${dayStr} ${String(Math.max(0, startHour - 3)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`, operator: '业主', action: '提交预约', content: `提交${movingType === 'move_in' ? '搬入' : '搬出'}预约申请` }
+        ]
+      }
+
+      if (status !== 'expired') {
+        record.processLogs.push({
+          time: record.auditTime,
+          operator: record.auditOperator,
+          action: '审核通过',
+          content: '审核通过'
+        })
+      }
+      if (['completed', 'cancelled'].includes(status)) {
+        record.processLogs.push({
+          time: record.depositTime,
+          operator: record.depositOperator,
+          action: '押金登记',
+          content: `缴纳押金${depositAmount}元`
+        })
+      }
+      if (status === 'completed') {
+        record.processLogs.push({
+          time: record.entryReleaseTime,
+          operator: record.entryReleaseOperator,
+          action: '入场放行',
+          content: `从${record.entryReleaseGate}放行入场`
+        })
+        record.processLogs.push({
+          time: record.verifyTime,
+          operator: record.verifyOperator,
+          action: '现场核验',
+          content: '现场核验通过，物品与申报一致'
+        })
+        record.processLogs.push({
+          time: record.exitReleaseTime,
+          operator: record.exitReleaseOperator,
+          action: '离场放行',
+          content: `从${record.exitReleaseGate}放行离场`
+        })
+        record.processLogs.push({
+          time: record.completeTime,
+          operator: record.completeOperator,
+          action: '完结登记',
+          content: '搬家流程正常结束，押金已退还'
+        })
+      }
+      if (status === 'cancelled') {
+        record.processLogs.push({
+          time: `${dayStr} ${String(Math.max(0, startHour - 1)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`,
+          operator: '业主',
+          action: '取消预约',
+          content: '业主取消预约'
+        })
+      }
+
+      records.push(record)
+    }
+  }
+
+  // 按创建时间倒序
+  records.sort((a, b) => b.createTime.localeCompare(a.createTime))
+
+  return records
+}
+
+export const movingRecords = generateMovingRecords()
+
 export { repairCategories, urgentLevels, engineers, serviceStaff, satisfactionLevels, visitStatusMap, generateRepairOrders, generateVisitorRecords }

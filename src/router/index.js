@@ -85,6 +85,21 @@ const routes = [
     path: '/decoration/:id',
     name: 'DecorationDetail',
     component: () => import('../views/decoration/DecorationDetail.vue')
+  },
+  {
+    path: '/moving',
+    name: 'MovingList',
+    component: () => import('../views/moving/MovingList.vue')
+  },
+  {
+    path: '/moving/create',
+    name: 'MovingCreate',
+    component: () => import('../views/moving/MovingCreate.vue')
+  },
+  {
+    path: '/moving/:id',
+    name: 'MovingDetail',
+    component: () => import('../views/moving/MovingDetail.vue')
   }
 ]
 

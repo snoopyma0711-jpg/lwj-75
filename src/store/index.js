@@ -27,7 +27,12 @@ import {
   violationTypes,
   decorationRecords,
   extensionStatusMap,
-  extensionStatusColorMap
+  extensionStatusColorMap,
+  movingTypes,
+  movingStatusMap,
+  movingStatusColorMap,
+  depositAmountOptions,
+  movingRecords
 } from './mockData'
 
 const today = dayjs('2026-06-17')
@@ -61,6 +66,11 @@ const state = reactive({
   violationTypes: [...violationTypes],
   extensionStatusMap: { ...extensionStatusMap },
   extensionStatusColorMap: { ...extensionStatusColorMap },
+  movingRecords: [...movingRecords],
+  movingTypes: [...movingTypes],
+  movingStatusMap: { ...movingStatusMap },
+  movingStatusColorMap: { ...movingStatusColorMap },
+  depositAmountOptions: [...depositAmountOptions],
   currentDate: today.format('YYYY-MM-DD')
 })
 
@@ -345,7 +355,84 @@ const getters = {
 
   getDecorationById: (id) => {
     return state.decorationRecords.find(r => r.id === id)
-  }
+  },
+
+  todayMoveInCount: computed(() => {
+    return state.movingRecords.filter(r => 
+      dayjs(r.moveStartTime).format('YYYY-MM-DD') === state.currentDate && 
+      r.movingType === 'move_in'
+    )
+  }),
+
+  todayMoveOutCount: computed(() => {
+    return state.movingRecords.filter(r => 
+      dayjs(r.moveStartTime).format('YYYY-MM-DD') === state.currentDate && 
+      r.movingType === 'move_out'
+    )
+  }),
+
+  todayPendingAuditMoving: computed(() => {
+    return state.movingRecords.filter(r => 
+      dayjs(r.moveStartTime).format('YYYY-MM-DD') === state.currentDate && 
+      r.status === 'pending_audit'
+    )
+  }),
+
+  todayPendingReleaseMoving: computed(() => {
+    return state.movingRecords.filter(r => 
+      dayjs(r.moveStartTime).format('YYYY-MM-DD') === state.currentDate && 
+      ['deposit_paid', 'audit_approved'].includes(r.status)
+    )
+  }),
+
+  todayCompletedMoving: computed(() => {
+    return state.movingRecords.filter(r => 
+      dayjs(r.completeTime).format('YYYY-MM-DD') === state.currentDate && 
+      r.status === 'completed'
+    )
+  }),
+
+  todayAbnormalMoving: computed(() => {
+    return state.movingRecords.filter(r => 
+      dayjs(r.moveStartTime).format('YYYY-MM-DD') === state.currentDate && 
+      r.hasAbnormal
+    )
+  }),
+
+  getMovingById: (id) => {
+    return state.movingRecords.find(r => r.id === id)
+  },
+
+  last7DaysMovingTrend: computed(() => {
+    const days = []
+    for (let i = 6; i >= 0; i--) {
+      const date = today.subtract(i, 'day').format('YYYY-MM-DD')
+      const moveInCount = state.movingRecords.filter(r => 
+        dayjs(r.moveStartTime).format('YYYY-MM-DD') === date && r.movingType === 'move_in'
+      ).length
+      const moveOutCount = state.movingRecords.filter(r => 
+        dayjs(r.moveStartTime).format('YYYY-MM-DD') === date && r.movingType === 'move_out'
+      ).length
+      days.push({ date, moveInCount, moveOutCount, total: moveInCount + moveOutCount })
+    }
+    return days
+  }),
+
+  movingBuildingDistribution: computed(() => {
+    const buildingMap = {}
+    state.movingRecords.forEach(r => {
+      if (r.buildingId && dayjs(r.moveStartTime).format('YYYY-MM-DD') >= today.subtract(7, 'day').format('YYYY-MM-DD')) {
+        buildingMap[r.buildingId] = (buildingMap[r.buildingId] || 0) + 1
+      }
+    })
+    return state.buildings.map(building => {
+      return { 
+        name: building.name, 
+        count: buildingMap[building.id] || 0, 
+        id: building.id 
+      }
+    }).sort((a, b) => b.count - a.count)
+  })
 }
 
 const actions = {
@@ -1749,6 +1836,393 @@ const actions = {
     }
     
     return errors
+  },
+
+  createMovingRecord(recordData) {
+    const todayStr = today.format('YYYYMMDD')
+    const todayCount = state.movingRecords.filter(o => 
+      o.id.startsWith('BJ' + todayStr)
+    ).length + 1
+    
+    const newRecord = {
+      id: `BJ${todayStr}${String(todayCount).padStart(4, '0')}`,
+      ...recordData,
+      status: 'pending_audit',
+      createTime: nowStr,
+      createOperator: recordData.createOperator || '张客服（前台）',
+      auditTime: null,
+      auditOperator: null,
+      auditRemark: null,
+      depositTime: null,
+      depositOperator: null,
+      depositMethod: null,
+      entryReleaseTime: null,
+      entryReleaseOperator: null,
+      entryReleaseGate: null,
+      verifyTime: null,
+      verifyOperator: null,
+      verifyResult: null,
+      verifyRemark: null,
+      itemsConsistent: null,
+      exitReleaseTime: null,
+      exitReleaseOperator: null,
+      exitReleaseGate: null,
+      completeTime: null,
+      completeOperator: null,
+      completeRemark: null,
+      depositRefunded: null,
+      depositRefundTime: null,
+      hasAbnormal: false,
+      abnormalTypes: [],
+      processLogs: [
+        { time: nowStr, operator: recordData.createOperator || '张客服', action: '提交预约', content: `提交${recordData.movingType === 'move_in' ? '搬入' : '搬出'}预约申请` }
+      ]
+    }
+    
+    state.movingRecords.unshift(newRecord)
+    return newRecord
+  },
+
+  auditMoving(recordId, operator, isApproved, remark) {
+    const record = state.movingRecords.find(r => r.id === recordId)
+    if (!record || record.status !== 'pending_audit') return false
+
+    record.auditTime = nowStr
+    record.auditOperator = operator
+    record.auditRemark = remark || ''
+    
+    if (isApproved) {
+      const missingMaterials = []
+      if (!record.plateNumber || record.plateNumber.trim() === '') {
+        missingMaterials.push('搬运车辆牌号')
+      }
+      if (!record.movingCompany || record.movingCompany.trim() === '') {
+        missingMaterials.push('搬家公司')
+      }
+      if (!record.declaredItems || record.declaredItems.length === 0) {
+        missingMaterials.push('申报物品清单')
+      }
+      
+      if (missingMaterials.length > 0) {
+        record.hasAbnormal = true
+        if (!record.abnormalTypes.includes('material_incomplete')) {
+          record.abnormalTypes.push('material_incomplete')
+        }
+        record.status = 'audit_approved'
+        record.processLogs.push({
+          time: nowStr,
+          operator: operator,
+          action: '审核通过（资料待补）',
+          content: `审核通过，但缺少资料：${missingMaterials.join('、')}。${remark || ''}`
+        })
+      } else {
+        record.status = 'audit_approved'
+        record.processLogs.push({
+          time: nowStr,
+          operator: operator,
+          action: '审核通过',
+          content: remark || '资料齐全，审核通过'
+        })
+      }
+    } else {
+      record.status = 'audit_rejected'
+      record.hasAbnormal = true
+      if (!record.abnormalTypes.includes('material_incomplete')) {
+        record.abnormalTypes.push('material_incomplete')
+      }
+      record.processLogs.push({
+        time: nowStr,
+        operator: operator,
+        action: '审核拒绝',
+        content: remark || '审核未通过'
+      })
+    }
+    
+    return true
+  },
+
+  registerDeposit(recordId, operator, amount, method) {
+    const record = state.movingRecords.find(r => r.id === recordId)
+    if (!record || !['audit_approved', 'pending_audit'].includes(record.status)) return false
+
+    record.depositTime = nowStr
+    record.depositOperator = operator
+    record.depositMethod = method || '现金'
+    record.depositAmount = amount
+    record.status = 'deposit_paid'
+    
+    if (record.abnormalTypes.includes('deposit_unpaid')) {
+      record.abnormalTypes = record.abnormalTypes.filter(t => t !== 'deposit_unpaid')
+      if (record.abnormalTypes.length === 0) {
+        record.hasAbnormal = false
+      }
+    }
+    
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '押金登记',
+      content: `收取押金${amount}元（${method || '现金'}）`
+    })
+    
+    return true
+  },
+
+  releaseEntryMoving(recordId, operator, gate) {
+    const record = state.movingRecords.find(r => r.id === recordId)
+    if (!record) return { success: false, message: '未找到该预约记录' }
+
+    if (record.status === 'audit_rejected') {
+      return { success: false, message: '该预约已被审核拒绝，无法放行' }
+    }
+    if (record.status === 'cancelled') {
+      return { success: false, message: '该预约已被取消，无法放行' }
+    }
+    if (record.status === 'completed') {
+      return { success: false, message: '该搬家已完结，无需重复操作' }
+    }
+    if (['entry_released', 'verifying', 'exit_released'].includes(record.status)) {
+      return { success: false, message: '该搬家车辆已入场，无需重复放行' }
+    }
+    if (record.status === 'pending_audit') {
+      return { success: false, message: '该预约尚未审核，请先审核通过' }
+    }
+    if (record.status === 'audit_approved') {
+      return { success: false, message: '尚未缴纳押金，请先完成押金登记' }
+    }
+    if (record.status !== 'deposit_paid') {
+      return { success: false, message: `当前状态为"${movingStatusMap[record.status]}"，不允许入场放行` }
+    }
+
+    const moveTime = dayjs(record.moveStartTime)
+    const expiryTime = moveTime.add(4, 'hour')
+    if (nowTime.isAfter(expiryTime)) {
+      record.hasAbnormal = true
+      if (!record.abnormalTypes.includes('overtime')) {
+        record.abnormalTypes.push('overtime')
+      }
+    }
+
+    record.entryReleaseTime = nowStr
+    record.entryReleaseOperator = operator
+    record.entryReleaseGate = gate
+    record.status = 'entry_released'
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '入场放行',
+      content: `从${gate}车辆通道放行入场`
+    })
+    
+    return { success: true }
+  },
+
+  verifyMoving(recordId, operator, verifyResult, verifyRemark, itemsConsistent) {
+    const record = state.movingRecords.find(r => r.id === recordId)
+    if (!record) return false
+
+    if (!['entry_released', 'verifying'].includes(record.status)) return false
+
+    record.verifyTime = nowStr
+    record.verifyOperator = operator
+    record.verifyResult = verifyResult
+    record.verifyRemark = verifyRemark
+    record.itemsConsistent = itemsConsistent
+
+    if (itemsConsistent === false) {
+      record.hasAbnormal = true
+      if (!record.abnormalTypes.includes('items_inconsistent')) {
+        record.abnormalTypes.push('items_inconsistent')
+      }
+      record.status = 'verifying'
+    } else {
+      if (record.abnormalTypes.includes('items_inconsistent')) {
+        record.abnormalTypes = record.abnormalTypes.filter(t => t !== 'items_inconsistent')
+        if (record.abnormalTypes.length === 0) {
+          record.hasAbnormal = false
+        }
+      }
+      record.status = 'verifying'
+    }
+    
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '现场核验',
+      content: itemsConsistent 
+        ? `现场核验通过，物品与申报一致。${verifyRemark || ''}` 
+        : `现场核验发现异常：${verifyRemark || '物品与申报不符'}`
+    })
+    
+    return true
+  },
+
+  releaseExitMoving(recordId, operator, gate) {
+    const record = state.movingRecords.find(r => r.id === recordId)
+    if (!record) return { success: false, message: '未找到该预约记录' }
+
+    if (!['entry_released', 'verifying'].includes(record.status)) {
+      return { success: false, message: `当前状态为"${movingStatusMap[record.status]}"，不允许离场放行` }
+    }
+
+    record.exitReleaseTime = nowStr
+    record.exitReleaseOperator = operator
+    record.exitReleaseGate = gate
+    record.status = 'exit_released'
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '离场放行',
+      content: `从${gate}车辆通道放行离场`
+    })
+    
+    return { success: true }
+  },
+
+  completeMoving(recordId, operator, remark, refundDeposit) {
+    const record = state.movingRecords.find(r => r.id === recordId)
+    if (!record) return false
+
+    if (!['exit_released', 'verifying'].includes(record.status)) return false
+
+    record.completeTime = nowStr
+    record.completeOperator = operator
+    record.completeRemark = remark || ''
+    record.status = 'completed'
+    
+    if (refundDeposit) {
+      record.depositRefunded = true
+      record.depositRefundTime = nowStr
+    }
+    
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '完结登记',
+      content: `搬家流程结束。${refundDeposit ? '押金已退还。' : ''}${remark || ''}`
+    })
+    
+    return true
+  },
+
+  cancelMoving(recordId, operator, reason) {
+    const record = state.movingRecords.find(r => r.id === recordId)
+    if (!record || ['completed', 'cancelled', 'audit_rejected', 'expired'].includes(record.status)) return false
+
+    record.status = 'cancelled'
+    record.remark = reason
+    
+    if (record.depositTime) {
+      record.depositRefunded = true
+      record.depositRefundTime = nowStr
+    }
+    
+    record.processLogs.push({
+      time: nowStr,
+      operator: operator,
+      action: '取消预约',
+      content: reason || '取消预约'
+    })
+    
+    return true
+  },
+
+  updateMovingRecord(recordId, updateData) {
+    const record = state.movingRecords.find(r => r.id === recordId)
+    if (!record) return false
+    
+    Object.assign(record, updateData)
+    
+    record.processLogs.push({
+      time: nowStr,
+      operator: updateData.updateOperator || '张客服',
+      action: '修改信息',
+      content: '更新搬家预约信息'
+    })
+    
+    return true
+  },
+
+  validateMovingForm(formData) {
+    const errors = {}
+    
+    if (!formData.movingType) {
+      errors.movingType = '请选择搬家类型'
+    }
+    
+    if (!formData.buildingId) {
+      errors.buildingId = '请选择楼栋'
+    }
+    
+    if (!formData.roomNumber || formData.roomNumber.trim() === '') {
+      errors.roomNumber = '请填写房号'
+    }
+    
+    if (!formData.ownerName || formData.ownerName.trim() === '') {
+      errors.ownerName = '请填写业主姓名'
+    } else if (formData.ownerName.trim().length < 2) {
+      errors.ownerName = '业主姓名至少2个字符'
+    }
+    
+    if (!formData.ownerPhone || formData.ownerPhone.trim() === '') {
+      errors.ownerPhone = '请填写业主联系电话'
+    } else if (!/^1[3-9]\d{9}$/.test(formData.ownerPhone.trim())) {
+      errors.ownerPhone = '业主手机号格式不正确'
+    }
+    
+    if (!formData.contactName || formData.contactName.trim() === '') {
+      errors.contactName = '请填写联系人姓名'
+    } else if (formData.contactName.trim().length < 2) {
+      errors.contactName = '联系人姓名至少2个字符'
+    }
+    
+    if (!formData.contactPhone || formData.contactPhone.trim() === '') {
+      errors.contactPhone = '请填写联系电话'
+    } else if (!/^1[3-9]\d{9}$/.test(formData.contactPhone.trim())) {
+      errors.contactPhone = '联系电话格式不正确，请输入11位有效手机号'
+    }
+    
+    if (!formData.moveStartTime || formData.moveStartTime.trim() === '') {
+      errors.moveStartTime = '请选择搬家开始时间'
+    }
+    
+    if (!formData.moveEndTime || formData.moveEndTime.trim() === '') {
+      errors.moveEndTime = '请选择搬家结束时间'
+    } else if (formData.moveStartTime) {
+      const start = dayjs(formData.moveStartTime)
+      const end = dayjs(formData.moveEndTime)
+      if (end.isBefore(start)) {
+        errors.moveEndTime = '结束时间不能早于开始时间'
+      }
+    }
+    
+    if (formData.workerCount === '' || formData.workerCount === null || formData.workerCount === undefined) {
+      errors.workerCount = '请填写搬运工人人数'
+    } else if (isNaN(Number(formData.workerCount)) || Number(formData.workerCount) < 1) {
+      errors.workerCount = '搬运工人人数不能小于1人'
+    }
+    
+    if (formData.vehicleCount === '' || formData.vehicleCount === null || formData.vehicleCount === undefined) {
+      errors.vehicleCount = '请填写搬运车辆数量'
+    } else if (isNaN(Number(formData.vehicleCount)) || Number(formData.vehicleCount) < 1) {
+      errors.vehicleCount = '搬运车辆数量不能小于1辆'
+    }
+    
+    if (!formData.plateNumber || formData.plateNumber.trim() === '') {
+      errors.plateNumber = '请填写搬运车辆牌号'
+    }
+    
+    if (formData.depositAmount === '' || formData.depositAmount === null || formData.depositAmount === undefined) {
+      errors.depositAmount = '请选择押金金额'
+    } else if (isNaN(Number(formData.depositAmount)) || Number(formData.depositAmount) < 0) {
+      errors.depositAmount = '押金金额不能为负数'
+    }
+    
+    if (!formData.declaredItems || formData.declaredItems.length === 0) {
+      errors.declaredItems = '请至少申报一件搬运物品'
+    }
+    
+    return errors
   }
 }
 
@@ -1778,5 +2252,9 @@ export {
   decorationStatusColorMap,
   violationTypes,
   extensionStatusMap,
-  extensionStatusColorMap
+  extensionStatusColorMap,
+  movingTypes,
+  movingStatusMap,
+  movingStatusColorMap,
+  depositAmountOptions
 }

@@ -105,6 +105,7 @@ const roleName = computed(() => {
 const menuItems = [
   { path: '/', name: '首页仪表盘' },
   { path: '/decoration', name: '装修管理' },
+  { path: '/moving', name: '搬家预约' },
   { path: '/visitor', name: '访客预约' },
   { path: '/blacklist', name: '黑名单管理' }
 ]
