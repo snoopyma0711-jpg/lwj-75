@@ -1880,7 +1880,7 @@ const actions = {
     }
     
     state.movingRecords.unshift(newRecord)
-    return newRecord
+    return { success: true, record: newRecord }
   },
 
   auditMoving(recordId, operator, isApproved, remark) {
@@ -1943,7 +1943,7 @@ const actions = {
 
   registerDeposit(recordId, operator, amount, method) {
     const record = state.movingRecords.find(r => r.id === recordId)
-    if (!record || !['audit_approved', 'pending_audit'].includes(record.status)) return false
+    if (!record || record.status !== 'audit_approved') return false
 
     record.depositTime = nowStr
     record.depositOperator = operator

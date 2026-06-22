@@ -262,19 +262,19 @@
             <span class="w-1 h-5 bg-primary-500 rounded-full mr-3"></span>
             操作记录
           </h2>
-          <div v-if="record.operationLogs && record.operationLogs.length > 0" class="space-y-4">
+          <div v-if="record.processLogs && record.processLogs.length > 0" class="space-y-4">
             <div 
-              v-for="(log, idx) in record.operationLogs" 
+              v-for="(log, idx) in record.processLogs" 
               :key="idx"
               class="relative pl-6 pb-4 border-l-2 border-gray-200 last:pb-0 last:border-transparent"
             >
-              <div class="absolute -left-2 top-0 w-4 h-4 rounded-full" :class="getLogDotClass(log.type)"></div>
+              <div class="absolute -left-2 top-0 w-4 h-4 rounded-full" :class="getLogDotClass(log.action)"></div>
               <div class="flex items-baseline justify-between">
                 <span class="text-sm font-medium text-gray-900">{{ log.action }}</span>
                 <span class="text-xs text-gray-400">{{ log.time }}</span>
               </div>
               <p class="text-xs text-gray-500 mt-1">操作人：{{ log.operator }}</p>
-              <p v-if="log.remark" class="text-xs text-gray-600 mt-1 bg-gray-50 px-2 py-1 rounded">{{ log.remark }}</p>
+              <p v-if="log.content" class="text-xs text-gray-600 mt-1 bg-gray-50 px-2 py-1 rounded whitespace-pre-wrap">{{ log.content }}</p>
             </div>
           </div>
           <p v-else class="text-sm text-gray-400">暂无操作记录</p>
@@ -631,7 +631,7 @@ const canAudit = computed(() => {
 
 const canDeposit = computed(() => {
   if (!record.value) return false
-  return ['audit_approved', 'pending_audit'].includes(record.value.status) && 
+  return record.value.status === 'audit_approved' && 
     !record.value.depositTime && 
     ['service', 'housekeeper'].includes(currentRole.value)
 })
@@ -790,18 +790,19 @@ const getStepClass = (step) => {
   return 'bg-gray-200 text-gray-500'
 }
 
-const getLogDotClass = (type) => {
-  const map = {
-    create: 'bg-blue-400',
-    audit: 'bg-yellow-400',
-    deposit: 'bg-indigo-400',
-    entry: 'bg-purple-400',
-    verify: 'bg-orange-400',
-    exit: 'bg-teal-400',
-    complete: 'bg-green-400',
-    cancel: 'bg-red-400'
-  }
-  return map[type] || 'bg-gray-400'
+const getLogDotClass = (action) => {
+  const map = [
+    { keyword: '提交', color: 'bg-blue-400' },
+    { keyword: '审核', color: 'bg-yellow-400' },
+    { keyword: '押金', color: 'bg-indigo-400' },
+    { keyword: '入场', color: 'bg-purple-400' },
+    { keyword: '核验', color: 'bg-orange-400' },
+    { keyword: '离场', color: 'bg-teal-400' },
+    { keyword: '完结', color: 'bg-green-400' },
+    { keyword: '取消', color: 'bg-red-400' }
+  ]
+  const match = map.find(m => action.includes(m.keyword))
+  return match ? match.color : 'bg-gray-400'
 }
 
 const getMovingTypeLabel = (value) => {

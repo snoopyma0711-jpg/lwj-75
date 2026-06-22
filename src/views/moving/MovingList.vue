@@ -749,7 +749,7 @@ const canAudit = (record) => {
 }
 
 const canDeposit = (record) => {
-  return ['audit_approved', 'pending_audit'].includes(record.status) && 
+  return record.status === 'audit_approved' && 
     !record.depositTime && 
     ['service', 'housekeeper'].includes(currentRole.value)
 }
