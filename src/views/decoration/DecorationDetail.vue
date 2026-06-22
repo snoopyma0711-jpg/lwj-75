@@ -818,7 +818,7 @@
             <p class="text-sm"><span class="text-gray-500">申请编号：</span><span class="font-mono font-medium">{{ record.id }}</span></p>
             <p class="text-sm"><span class="text-gray-500">房号：</span><span class="font-medium">{{ record.roomNumber }}</span></p>
             <p class="text-sm"><span class="text-gray-500">业主：</span><span class="font-medium">{{ record.ownerName }}</span></p>
-            <p class="text-sm"><span class="text-gray-500">原计划完工时间：</span><span class="font-medium">{{ record.originalEndDate || record.endDate }}</span></p>
+            <p class="text-sm"><span class="text-gray-500">原计划完工时间：</span><span class="font-medium">{{ record.endDate }}</span></p>
           </div>
           <div class="border rounded-lg p-4 mb-4">
             <h4 class="font-medium text-gray-900 mb-3">延期申请详情</h4>

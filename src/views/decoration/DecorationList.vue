@@ -110,15 +110,15 @@
         </div>
       </div>
 
-      <div class="card p-5 bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200 cursor-pointer hover:shadow-lg transition-shadow" @click="quickFilter('overdue')">
+      <div class="card p-5 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow" @click="quickFilter('extended')">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-rose-600 font-medium">已延期施工</p>
-            <p class="text-3xl font-bold text-rose-700 mt-2">{{ overdueDecorations.length }}</p>
+            <p class="text-sm text-purple-600 font-medium">已延期施工</p>
+            <p class="text-3xl font-bold text-purple-700 mt-2">{{ extendedDecorations.length }}</p>
           </div>
-          <div class="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center">
+          <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
@@ -412,7 +412,7 @@
             <p><span class="font-medium text-gray-600">申请编号：</span>{{ currentRecord.id }}</p>
             <p><span class="font-medium text-gray-600">房号：</span>{{ currentRecord.roomNumber }}</p>
             <p><span class="font-medium text-gray-600">业主：</span>{{ currentRecord.ownerName }}</p>
-            <p><span class="font-medium text-gray-600">原计划完工时间：</span>{{ currentRecord.originalEndDate || currentRecord.endDate }}</p>
+            <p><span class="font-medium text-gray-600">原计划完工时间：</span>{{ currentRecord.endDate }}</p>
           </div>
 
           <div class="border rounded-lg p-4">
@@ -502,7 +502,7 @@ const filters = reactive({
 onMounted(() => {
   if (route.query.filter) {
     const f = route.query.filter
-    if (f === 'today_expiring' || f === 'pending_extension' || f === 'overdue' || f === 'expiring_soon') {
+    if (f === 'today_expiring' || f === 'pending_extension' || f === 'overdue' || f === 'expiring_soon' || f === 'extended') {
       quickFilter(f)
     }
   }
@@ -776,7 +776,13 @@ const goToDetail = (id) => {
 }
 
 const quickFilter = (type) => {
-  resetFilters()
+  filters.buildingId = ''
+  filters.status = ''
+  filters.decorationType = ''
+  filters.isOverdue = ''
+  filters.extensionStatus = ''
+  filters.timeRange = 'all'
+  filters.keyword = ''
   if (type === 'today') {
     filters.timeRange = 'today'
   } else if (type === 'pending_audit') {
@@ -794,6 +800,8 @@ const quickFilter = (type) => {
     filters.extensionStatus = 'pending'
   } else if (type === 'overdue') {
     filters.isOverdue = 'yes'
+  } else if (type === 'extended') {
+    filters.extensionStatus = 'approved'
   }
   showToast('已应用快捷筛选', 'success')
 }

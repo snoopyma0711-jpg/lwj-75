@@ -152,16 +152,16 @@
         </div>
       </div>
 
-      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow border-2 border-rose-100 bg-gradient-to-br from-rose-50 to-white" @click="goToDecorationWithFilter('overdue')">
+      <div class="card p-5 cursor-pointer hover:shadow-md transition-shadow border-2 border-purple-100 bg-gradient-to-br from-purple-50 to-white" @click="goToDecorationWithFilter('extended')">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500">已延期施工</p>
-            <p class="text-3xl font-bold text-rose-600 mt-1">{{ store.overdueDecorations.value.length }}</p>
-            <p class="text-xs text-rose-500 mt-1">已超过计划完工日期</p>
+            <p class="text-3xl font-bold text-purple-600 mt-1">{{ store.extendedDecorations.value.length }}</p>
+            <p class="text-xs text-purple-500 mt-1">延期申请已通过的施工</p>
           </div>
-          <div class="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center">
-            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
